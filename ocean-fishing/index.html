@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>オーシャンフィッシング魚図鑑</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@700&display=swap" rel="stylesheet">
+<style>
+/* layout: sticky filter bar over a dense, scannable list of fish rows; tabs switch to legend fish / voyage patterns / data notes */
+:root {
+  --bg: #edf2f3;
+  --surface: #ffffff;
+  --ink: #10222e;
+  --muted: #566a76;
+  --line: #d3dee2;
+  --accent: #0d6a77;
+  --spectral: #5b45c4;
+  --spectral-bg: #efecfc;
+  --tug1: #2a74ad;
+  --tug2: #b87006;
+  --tug3: #c0343a;
+  --day: #9a6b00;
+  --dusk: #c2502a;
+  --night: #3d4fb0;
+  --chip: #e6eef0;
+  --warn-bg: #fff4dc;
+  --warn-ink: #6e4a00;
+  --font-display: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-body: "IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a161d;
+    --surface: #102029;
+    --ink: #e2ecf0;
+    --muted: #93a8b3;
+    --line: #213847;
+    --accent: #52bfcb;
+    --spectral: #ab98ff;
+    --spectral-bg: #1d1a3a;
+    --tug1: #6fb4ea;
+    --tug2: #f0a93a;
+    --tug3: #ff7378;
+    --day: #e8bd45;
+    --dusk: #ff8a5c;
+    --night: #96a5ff;
+    --chip: #18303c;
+    --warn-bg: #352a10;
+    --warn-ink: #f3d58f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a161d;
+  --surface: #102029;
+  --ink: #e2ecf0;
+  --muted: #93a8b3;
+  --line: #213847;
+  --accent: #52bfcb;
+  --spectral: #ab98ff;
+  --spectral-bg: #1d1a3a;
+  --tug1: #6fb4ea;
+  --tug2: #f0a93a;
+  --tug3: #ff7378;
+  --day: #e8bd45;
+  --dusk: #ff8a5c;
+  --night: #96a5ff;
+  --chip: #18303c;
+  --warn-bg: #352a10;
+  --warn-ink: #f3d58f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-text-size-adjust: 100%;
+}
+a { color: var(--accent); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 16px; }
+header.top { padding: 18px 0 10px; display: grid; gap: 4px; }
+header.top h1 { font-size: 22px; letter-spacing: .02em; }
+header.top p { margin: 0; color: var(--muted); font-size: 13px; }
+nav.tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 10px; }
+nav.tabs a {
+  flex: 0 0 auto; text-decoration: none; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 13.5px; font-weight: 500;
+}
+nav.tabs a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.panel { display: none; }
+.panel.on { display: block; }
+.filters {
+  background: var(--bg);
+  padding: 8px 0 10px; border-bottom: 1px solid var(--line); display: grid; gap: 8px;
+}
+.frow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.field { display: grid; gap: 2px; flex: 1 1 140px; min-width: 0; }
+.field label { font-size: 11px; color: var(--muted); font-weight: 500; }
+select, input[type="search"] {
+  width: 100%; font: inherit; font-size: 15px; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; min-height: 38px;
+}
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button {
+  font: inherit; font-size: 14px; border: 0; background: transparent; color: var(--ink);
+  padding: 7px 12px; min-height: 36px; cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 700; }
+.check { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.summary {
+  margin: 12px 0 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; display: grid; gap: 6px; font-size: 13px;
+}
+.summary h2 { font-size: 18px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.summary .en { font-family: var(--font-body); font-size: 12px; color: var(--muted); font-weight: 400; }
+.times { display: grid; gap: 3px; }
+.times div { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: baseline; }
+.notice { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.badge-new { font-family: var(--font-body); font-size: 11px; font-weight: 700; color: var(--surface); background: var(--tug3); border-radius: 4px; padding: 1px 6px; }
+.section-h {
+  margin: 16px 0 0; padding: 6px 12px; font-size: 14px; font-weight: 700; border-radius: 8px 8px 0 0;
+  background: var(--surface); border: 1px solid var(--line); border-bottom: 0; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+}
+.section-h.sc { background: var(--spectral-bg); color: var(--spectral); }
+.section-h small { font-weight: 400; color: var(--muted); }
+.list { background: var(--surface); border: 1px solid var(--line); border-radius: 0 0 8px 8px; }
+.fish {
+  display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; gap: 2px 10px;
+  padding: 10px 12px; border-top: 1px solid var(--line);
+}
+.fish:first-child { border-top: 0; }
+.fish.dim { opacity: .45; }
+.tug {
+  grid-row: 1 / span 2; align-self: start; text-align: center; font-weight: 700; font-size: 18px;
+  border-radius: 8px; padding: 6px 0; border: 2px solid currentColor; line-height: 1.1; letter-spacing: -.04em;
+}
+.t1 { color: var(--tug1); } .t2 { color: var(--tug2); } .t3 { color: var(--tug3); }
+.nm { font-weight: 700; font-size: 16px; overflow-wrap: anywhere; display: flex; gap: 8px; align-items: flex-start; }
+.nm .tx { min-width: 0; }
+.fi { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 6px; }
+.ic { width: 18px; height: 18px; vertical-align: -4px; margin-right: 2px; border-radius: 3px; }
+.ic.s { width: 22px; height: 22px; vertical-align: -6px; }
+.nm .en { display: block; font-weight: 400; font-size: 11px; color: var(--muted); }
+.sec { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sec b { font-size: 20px; }
+.sec span { display: block; font-size: 11px; color: var(--muted); }
+.meta, .baits, .note { grid-column: 2 / span 2; font-size: 12.5px; }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin-top: 2px; }
+.chip { background: var(--chip); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+.chip.pts { font-variant-numeric: tabular-nums; font-weight: 700; }
+.chip.wx { background: var(--warn-bg); color: var(--warn-ink); }
+.chip.role-trigger { background: var(--spectral-bg); color: var(--spectral); font-weight: 700; }
+.chip.role-intuition { background: #dff3e4; color: #1d6b35; font-weight: 700; }
+.chip.role-legend { background: var(--tug3); color: var(--surface); font-weight: 700; }
+.chip.alt { border: 1px dashed var(--muted); background: transparent; }
+:root[data-theme="dark"] .chip.role-intuition { background: #17361f; color: #8fe0a5; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chip.role-intuition { background: #17361f; color: #8fe0a5; } }
+.tm { font-weight: 700; border-radius: 4px; padding: 1px 6px; color: var(--surface); }
+.tm-昼 { background: var(--day); } .tm-夕 { background: var(--dusk); } .tm-夜 { background: var(--night); }
+.baits { color: var(--muted); font-variant-numeric: tabular-nums; }
+.baits b { color: var(--ink); font-weight: 500; }
+.note { color: var(--ink); }
+.empty { padding: 18px 12px; color: var(--muted); }
+.count { font-size: 12px; color: var(--muted); margin-top: 10px; }
+.cards { display: grid; gap: 12px; margin: 14px 0 24px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 8px; }
+.card h3 { font-size: 17px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.kv { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 4px 10px; font-size: 13.5px; }
+.kv dt { color: var(--muted); font-size: 12px; padding-top: 2px; }
+.kv dd { margin: 0; }
+.kv dd .sub { display: block; color: var(--muted); font-size: 12px; }
+.route-group h2 { font-size: 17px; margin: 18px 0 8px; }
+.route { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; margin-bottom: 8px; }
+.route h3 { font-size: 15px; }
+.stops { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.stop { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 13px; display: grid; gap: 3px; align-content: start; }
+.stop .no { font-size: 11px; color: var(--muted); }
+.stop .lg { font-size: 12px; color: var(--tug3); font-weight: 700; }
+.prose { max-width: 66ch; font-size: 14.5px; }
+.prose h2 { font-size: 18px; margin: 20px 0 6px; }
+.prose ul { padding-left: 1.2em; margin: 6px 0; }
+.prose li { margin: 3px 0; }
+footer { color: var(--muted); font-size: 12px; padding: 24px 0 40px; display: grid; gap: 4px; }
+footer p { margin: 0; }
+footer .copyright { color: var(--ink); font-weight: 500; }
+.clockbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; padding: 4px 0 8px; }
+.clock { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.clockbar small { color: var(--muted); font-size: 12px; }
+.voyages { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.voy { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.voy button {
+  all: unset; box-sizing: border-box; display: grid; grid-template-columns: 80px minmax(0, 1fr); gap: 2px 10px;
+  width: 100%; padding: 9px 12px; cursor: pointer; border-radius: 10px;
+}
+.voy button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.voy.sel { border: 2px solid var(--accent); }
+.voy .when { grid-row: 1 / span 3; display: grid; align-content: start; gap: 1px; font-variant-numeric: tabular-nums; }
+.voy .when b { font-size: 19px; line-height: 1.1; }
+.voy .when small { font-size: 11px; color: var(--muted); }
+.voy .lbl { font-weight: 700; font-size: 15px; }
+.voy .path { font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 3px 4px; align-items: center; color: var(--muted); }
+.voy .path .tm { font-size: 11px; padding: 0 5px; }
+.voy .stars { font-size: 12px; color: var(--tug3); font-weight: 700; }
+.st { font-size: 11.5px; font-weight: 700; border-radius: 4px; padding: 1px 6px; justify-self: start; }
+.st-open { background: var(--tug3); color: var(--surface); }
+.st-sail { background: var(--accent); color: var(--surface); }
+.st-wait { background: var(--chip); color: var(--ink); }
+.more { font: inherit; font-size: 14px; margin: 10px 0 0; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--accent); cursor: pointer; }
+.detail { margin: 18px 0 8px; display: grid; gap: 10px; scroll-margin-top: 8px; }
+.detail-h { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; }
+.detail-h h2 { font-size: 19px; }
+.detail-h .sub { font-size: 13px; color: var(--muted); }
+.stoptabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.stoptabs button {
+  font: inherit; font-size: 13px; text-align: left; padding: 7px 8px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); display: grid; gap: 2px;
+}
+.stoptabs button[aria-pressed="true"] { border: 2px solid var(--accent); }
+.stoptabs .no { font-size: 11px; color: var(--muted); }
+.stoptabs .lgmark { font-size: 11px; color: var(--tug3); font-weight: 700; }
+.wxbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.wxbar button { font: inherit; font-size: 13px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.wxbar button[aria-pressed="true"] { background: var(--warn-ink); color: var(--surface); border-color: var(--warn-ink); }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+.rec { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; }
+.rec h3 { font-size: 15px; }
+.rec ol { margin: 0; padding-left: 1.3em; display: grid; gap: 5px; font-size: 13.5px; }
+.rec .phase { font-size: 12px; font-weight: 700; color: var(--muted); margin-top: 2px; }
+.rec .phase.sc { color: var(--spectral); }
+.rec .ng { color: var(--tug3); font-weight: 700; }
+.rec .lgline { font-weight: 700; }
+.nextwin { font-size: 12.5px; color: var(--accent); }
+@media (max-width: 420px) {
+  .stops { grid-template-columns: 1fr; }
+  .kv { grid-template-columns: 76px minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: no-preference) { nav.tabs a, .seg button { transition: background-color .15s; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>オーシャンフィッシング魚図鑑</h1>
+    <p>パッチ7.5x対応。出航予定から便を選ぶと、その便の3つの釣り場の時間帯で釣れる魚とねらい目を表示します。全13海域260件の餌・引き(!の数)・待ち秒数つき。</p>
+  </header>
+  <nav class="tabs" aria-label="表示切替">
+    <a href="#schedule" data-tab="schedule">予定表</a>
+    <a href="#fish" data-tab="fish">魚一覧</a>
+    <a href="#legend" data-tab="legend">ヌシ・幻海流</a>
+    <a href="#routes" data-tab="routes">航路・時間帯</a>
+    <a href="#about" data-tab="about">出典・注意点</a>
+  </nav>
+
+  <section class="panel" id="p-schedule" aria-label="予定表">
+    <div class="clockbar">
+      <div><span class="clock" id="clock">--:--:--</span> <small>日本時間・出航予定は自動で更新</small></div>
+      <div class="seg" role="group" aria-label="航路の種類">
+        <button type="button" id="fam-indigo">近海航路</button>
+        <button type="button" id="fam-ruby">遠洋航路</button>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="field" style="flex-basis:220px">
+        <label for="f-legend">ヌシが狙える便だけ表示</label>
+        <select id="f-legend"></select>
+      </div>
+    </div>
+    <ol class="voyages" id="voy-out"></ol>
+    <button type="button" class="more" id="voy-more">さらに12便を表示</button>
+    <div class="detail" id="voy-detail"></div>
+  </section>
+
+  <section class="panel" id="p-fish" aria-label="魚一覧">
+    <div class="filters">
+      <div class="frow">
+        <div class="field" style="flex-basis:220px">
+          <label for="f-spot">釣り場</label>
+          <select id="f-spot"></select>
+        </div>
+        <div class="field" style="flex-basis:160px">
+          <label for="f-q">魚名で全海域検索</label>
+          <input id="f-q" type="search" placeholder="例：ソティス／Sothis" autocomplete="off">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="seg" role="group" aria-label="通常・幻海流">
+          <button type="button" id="m-both" data-mode="both">両方</button>
+          <button type="button" id="m-n" data-mode="n">通常</button>
+          <button type="button" id="m-s" data-mode="s">幻海流</button>
+        </div>
+        <div class="field" style="flex-basis:96px">
+          <label for="f-time">時間帯（幻海流）</label>
+          <select id="f-time">
+            <option value="">指定なし</option><option value="昼">昼</option><option value="夕">夕</option><option value="夜">夜</option>
+          </select>
+        </div>
+        <div class="field" style="flex-basis:110px">
+          <label for="f-wx">天候（通常）</label>
+          <select id="f-wx"></select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="field" style="flex-basis:150px">
+          <label for="f-bait">秒数を表示する餌</label>
+          <select id="f-bait">
+            <option value="pref">推奨餌</option>
+            <option value="イワイソメ">イワイソメ</option>
+            <option value="クリル">クリル</option>
+            <option value="ファットワーム">ファットワーム</option>
+            <option value="special">特殊餌・泳がせ</option>
+          </select>
+        </div>
+        <div class="field" style="flex-basis:120px">
+          <label for="f-sort">並び順</label>
+          <select id="f-sort">
+            <option value="time">待ち秒数順</option>
+            <option value="pts">得点の高い順</option>
+            <option value="ord">釣り手帳順</option>
+          </select>
+        </div>
+        <label class="check" for="f-hide"><input type="checkbox" id="f-hide"> その餌で掛からない魚を隠す</label>
+      </div>
+    </div>
+    <div id="fish-out"></div>
+  </section>
+
+  <section class="panel" id="p-legend" aria-label="ヌシ・幻海流">
+    <p class="count">各海域の幻海流トリガー（通常時に釣ると幻海流が発生しうる魚）、通常時の直感魚、幻海流のヌシ（伝説魚）と、ヌシが狙える航路。</p>
+    <div class="cards" id="legend-out"></div>
+  </section>
+
+  <section class="panel" id="p-routes" aria-label="航路と時間帯">
+    <p class="count">各釣り場の時間帯は航路パターンで固定です（ゲームデータ IKDRoute より）。航路名の（）は最後の海域の時間帯。幻海流のヌシが出る時間帯に当たる海域には★を付けています。</p>
+    <div id="routes-out"></div>
+  </section>
+
+  <section class="panel prose" id="p-about" aria-label="データと注意点">
+    <h2>見方</h2>
+    <ul>
+      <li><b>秒数</b>：キャストしてから魚が食いつくまでの秒数（撒き餌なし）。撒き餌を使うと短くなります。餌によって秒数が変わる魚がいるので、餌別に載せています。「—」はその餌では掛からない（記録なし）という意味です。</li>
+      <li><b>推奨餌</b>：その魚が最も掛かりやすい餌。「泳がせ:〇〇」は〇〇を釣ってから泳がせ釣りで狙う魚です。</li>
+      <li><b>引き</b>：竿のしなりの「!」の数。チップの「プレシジョン／ストロング」は向いているフッキングです。</li>
+      <li><b>条件</b>：天候条件は通常時の魚だけ、時間帯条件は幻海流の魚だけにあります。各海域の時間帯は航路パターンで決まります（「航路と時間帯」タブ）。</li>
+      <li><b>DH/TH</b>：ダブルフッキング／トリプルフッキングで釣れる数。<b>TC実測</b>はTeamcraft利用者の記録による全餌合算の幅（参考値）。</li>
+    </ul>
+    <h2>予定表について</h2>
+    <ul>
+      <li>受付は日本時間の奇数時（1時、3時…23時）ちょうどに始まり、15分で締め切って出航します。近海航路・遠洋航路とも2時間ごとに1便です。</li>
+      <li>行き先と時間帯は決まった周期（144便＝12日）で回ります。近海航路は Lulu's Tools が公開している計算式、遠洋航路はパッチ7.5以降の周期（クガネ方面6種とサベネア島行き3種がほぼ交互）で計算しています。FFXIV Fieldcraft の運行表と照らし合わせて、近海航路12便すべてと遠洋航路の次回出航が一致することを確認済みです。</li>
+      <li>天候は便ごとにランダムに決まり、出航前には分かりません（同じ時刻の便でも船ごとに違います）。各釣り場に着いたら、その時の天候をタップすると、その天候で釣れない魚を外して表示します。幻海流が終わると天候は快晴になり、幻海流トリガーの魚は釣れなくなります。</li>
+    </ul>
+    <h2>古い情報への注意</h2>
+    <ul>
+      <li>パッチ7.5（2026年4月28日）で遠洋航路に「サベネア島行き」（名もなき島沖合 → セイレーン海沖合 → サベネア島沖合）が追加されました。7.5以前の攻略記事には名もなき島沖合・サベネア島沖合の魚が載っていません。</li>
+      <li>Lulu's Tools の魚一覧（日本語版）は、確認時点で名もなき島沖合・サベネア島沖合が未収録でした。</li>
+      <li>名もなき島沖合・サベネア島沖合のデータは 2026年5月1日時点の収集データで、元サイトでも「調整中」とされています。推奨餌が資料によって違う魚：サベネアンサウルス（ファットワーム／クリル）、ヒマヒマヒ（ファットワーム／イワイソメ）。アクパーラの待ち秒数は資料により8秒〜12秒。</li>
+      <li>ダブル/トリプルの数が資料で違う魚：ブラックヘリコプリオン、ジェイドマンティス（4/7 と 2/3）。本表は 4/7 を採用。</li>
+    </ul>
+    <h2>どう照合したか</h2>
+    <ul>
+      <li>海域ごとの魚の顔ぶれ・日本語名・航路パターンは、ゲームデータ（XIVAPI 経由の IKDSpot／FishingSpot／IKDRoute）から取得し、26の釣り場すべてで魚10種が一致することを確認しました。</li>
+      <li>餌・秒数・引き・得点・条件は Console Games Wiki の釣り手帳ページ（ffxiv.oceanfishing.boats／Tyo'to Tayuun 氏のデータ）を主に使い、旧海域22か所220件は Lulu's Tools と、7.5海域は FFXIV Fieldcraft と突き合わせました。引き・得点・条件の食い違いは上記以外ありませんでした。</li>
+    </ul>
+    <h2>画像について</h2>
+    <ul>
+      <li>魚と餌のアイコンは、エオルゼアデータベース（The Lodestone）の各アイテムページに掲載されている画像を、加工せずに縮小表示しています。エオルゼアデータベースに未掲載のアイテムはアイコンなしで表示します。</li>
+    </ul>
+    <h2>出典</h2>
+    <ul>
+      <li><a href="https://ffxiv.consolegameswiki.com/wiki/Ocean_Fishing">Console Games Wiki: Ocean Fishing</a>（各「Fishing Log」ページ）</li>
+      <li><a href="https://ffxiv.oceanfishing.boats/">OceanFishing.Boats</a>（Tyo'to Tayuun 氏）・<a href="https://oceanfishing.boats/FAQ/">FAQ（天候は予測不可）</a></li>
+      <li><a href="https://ffxiv.pf-n.co/ocean-fishing/about">Lulu's Tools: About（運行表の計算式）</a></li>
+      <li><a href="https://github.com/priestkos/ffxiv-ocean-fishing">priestkos/ffxiv-ocean-fishing（7.5以降の遠洋航路の周期）</a></li>
+      <li><a href="https://ffxiv-fieldcraft.com/ocean-fishing">FFXIV Fieldcraft: Ocean Fishing（運行表の照合）</a></li>
+      <li><a href="https://ffxiv.pf-n.co/ja/ocean-fishing/fish">Lulu's Tools: オーシャンフィッシング 魚類</a></li>
+      <li><a href="https://ffxiv-fieldcraft.com/ocean-fishing/thavnairian-coast">FFXIV Fieldcraft: Thavnairian coast</a></li>
+      <li><a href="https://v2.xivapi.com/">XIVAPI</a>（ゲームデータ）</li>
+      <li><a href="https://support.jp.square-enix.com/rule.php?id=5381&amp;la=0&amp;tag=authc">ファイナルファンタジーXIV 著作物利用条件</a>（ゲーム内テキスト等の利用と権利表記）</li>
+      <li><a href="https://game8.jp/ff14/316052">ゲームエイト: オーシャンフィッシング攻略（7.5対応）</a></li>
+      <li><a href="https://jp.finalfantasyxiv.com/lodestone/character/22614807/blog/5680542/">Lodestone日記: 7.5遠洋航路/サベネア島まとめ</a></li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>データ確認日 2026年11月1日。数値はコミュニティの集計値で、ゲーム内の仕様変更で変わることがあります。本ページは個人が作成した非公式のファンツールです。</p>
+    <p class="copyright">© SQUARE ENIX</p>
+  </footer>
+</div>
+
+<script type="application/json" id="data">{"spots":[{"id":1,"ja":"ガラディオン湾沖合","en":"Galadion Bay","group":"近海航路","new":false},{"id":2,"ja":"メルトール海峡南","en":"Southern Strait of Merlthor","group":"近海航路","new":false},{"id":3,"ja":"メルトール海峡北","en":"Northern Strait of Merlthor","group":"近海航路","new":false},{"id":4,"ja":"ロータノ海沖合","en":"Open Rhotano Sea","group":"近海航路","new":false},{"id":5,"ja":"シェルダレー諸島沖合","en":"Cieldalaes Margin","group":"近海航路","new":false},{"id":6,"ja":"緋汐海沖合","en":"Open Bloodbrine Sea","group":"近海航路","new":false},{"id":7,"ja":"ロズリト湾沖合","en":"Outer Rothlyt Sound","group":"近海航路","new":false},{"id":8,"ja":"セイレーン海沖合","en":"Sirensong Sea","group":"遠洋航路","new":false},{"id":9,"ja":"クガネ沖合","en":"Kugane Coast","group":"遠洋航路","new":false},{"id":10,"ja":"紅玉海沖合","en":"Open Ruby Sea","group":"遠洋航路","new":false},{"id":11,"ja":"無二江下流","en":"Lower One River","group":"遠洋航路","new":false},{"id":12,"ja":"名もなき島沖合","en":"Unnamed Island","group":"遠洋航路","new":true},{"id":13,"ja":"サベネア島沖合","en":"Thavnair Margin","group":"遠洋航路","new":true}],"routes":[{"id":1,"name":"メルトール海峡北行き","group":"近海航路","label":"メルトール海峡北行き（夜）","stops":[{"spot":2,"time":"昼"},{"spot":1,"time":"夕"},{"spot":3,"time":"夜"}]},{"id":2,"name":"メルトール海峡北行き","group":"近海航路","label":"メルトール海峡北行き（昼）","stops":[{"spot":2,"time":"夕"},{"spot":1,"time":"夜"},{"spot":3,"time":"昼"}]},{"id":3,"name":"メルトール海峡北行き","group":"近海航路","label":"メルトール海峡北行き（夕）","stops":[{"spot":2,"time":"夜"},{"spot":1,"time":"昼"},{"spot":3,"time":"夕"}]},{"id":4,"name":"ロータノ海行き","group":"近海航路","label":"ロータノ海行き（夜）","stops":[{"spot":1,"time":"昼"},{"spot":2,"time":"夕"},{"spot":4,"time":"夜"}]},{"id":5,"name":"ロータノ海行き","group":"近海航路","label":"ロータノ海行き（昼）","stops":[{"spot":1,"time":"夕"},{"spot":2,"time":"夜"},{"spot":4,"time":"昼"}]},{"id":6,"name":"ロータノ海行き","group":"近海航路","label":"ロータノ海行き（夕）","stops":[{"spot":1,"time":"夜"},{"spot":2,"time":"昼"},{"spot":4,"time":"夕"}]},{"id":7,"name":"緋汐海行き","group":"近海航路","label":"緋汐海行き（夜）","stops":[{"spot":5,"time":"昼"},{"spot":3,"time":"夕"},{"spot":6,"time":"夜"}]},{"id":8,"name":"緋汐海行き","group":"近海航路","label":"緋汐海行き（昼）","stops":[{"spot":5,"time":"夕"},{"spot":3,"time":"夜"},{"spot":6,"time":"昼"}]},{"id":9,"name":"緋汐海行き","group":"近海航路","label":"緋汐海行き（夕）","stops":[{"spot":5,"time":"夜"},{"spot":3,"time":"昼"},{"spot":6,"time":"夕"}]},{"id":10,"name":"ロズリト湾行き","group":"近海航路","label":"ロズリト湾行き（夜）","stops":[{"spot":5,"time":"昼"},{"spot":4,"time":"夕"},{"spot":7,"time":"夜"}]},{"id":11,"name":"ロズリト湾行き","group":"近海航路","label":"ロズリト湾行き（昼）","stops":[{"spot":5,"time":"夕"},{"spot":4,"time":"夜"},{"spot":7,"time":"昼"}]},{"id":12,"name":"ロズリト湾行き","group":"近海航路","label":"ロズリト湾行き（夕）","stops":[{"spot":5,"time":"夜"},{"spot":4,"time":"昼"},{"spot":7,"time":"夕"}]},{"id":13,"name":"無二江行き","group":"遠洋航路","label":"無二江行き（夜）","stops":[{"spot":8,"time":"昼"},{"spot":9,"time":"夕"},{"spot":11,"time":"夜"}]},{"id":14,"name":"無二江行き","group":"遠洋航路","label":"無二江行き（昼）","stops":[{"spot":8,"time":"夕"},{"spot":9,"time":"夜"},{"spot":11,"time":"昼"}]},{"id":15,"name":"無二江行き","group":"遠洋航路","label":"無二江行き（夕）","stops":[{"spot":8,"time":"夜"},{"spot":9,"time":"昼"},{"spot":11,"time":"夕"}]},{"id":16,"name":"紅玉海行き","group":"遠洋航路","label":"紅玉海行き（夜）","stops":[{"spot":8,"time":"昼"},{"spot":9,"time":"夕"},{"spot":10,"time":"夜"}]},{"id":17,"name":"紅玉海行き","group":"遠洋航路","label":"紅玉海行き（昼）","stops":[{"spot":8,"time":"夕"},{"spot":9,"time":"夜"},{"spot":10,"time":"昼"}]},{"id":18,"name":"紅玉海行き","group":"遠洋航路","label":"紅玉海行き（夕）","stops":[{"spot":8,"time":"夜"},{"spot":9,"time":"昼"},{"spot":10,"time":"夕"}]},{"id":19,"name":"サベネア島行き","group":"遠洋航路","label":"サベネア島行き（夜）","stops":[{"spot":12,"time":"昼"},{"spot":8,"time":"夕"},{"spot":13,"time":"夜"}]},{"id":20,"name":"サベネア島行き","group":"遠洋航路","label":"サベネア島行き（昼）","stops":[{"spot":12,"time":"夕"},{"spot":8,"time":"夜"},{"spot":13,"time":"昼"}]},{"id":21,"name":"サベネア島行き","group":"遠洋航路","label":"サベネア島行き（夕）","stops":[{"spot":12,"time":"夜"},{"spot":8,"time":"昼"},{"spot":13,"time":"夕"}]}],"fish":[{"spot":1,"sc":0,"id":28937,"en":"Galadion Goby","ja":"ガラディオンゴビー","ord":0,"pref":["イワイソメ"],"bites":{"イワイソメ":[4.0,8.0],"クリル":[4.0,8.0],"ファットワーム":[4.0,8.0]},"tug":1,"hook":"P","pts":10,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"4-11","alt":null},{"spot":1,"sc":0,"id":28938,"en":"Galadion Chovy","ja":"ガラディオンアンチョビ","ord":1,"pref":["クリル"],"bites":{"イワイソメ":[6.0,11.0],"クリル":[6.0,11.0],"ファットワーム":[6.0,11.0]},"tug":1,"hook":"P","pts":11,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-14","alt":null},{"spot":1,"sc":0,"id":29723,"en":"Leopard Eel","ja":"レオパードイール","ord":2,"pref":["ファットワーム"],"bites":{"イワイソメ":[9.0,17.0],"クリル":[9.0,17.0],"ファットワーム":[9.0,17.0]},"tug":2,"hook":"S","pts":14,"dh":"2","th":"3","stars":1,"wx_not":["雨","暴雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"8-20","alt":null},{"spot":1,"sc":0,"id":29719,"en":"Jasperhead","ja":"ジャスパーヘッド","ord":3,"pref":["クリル"],"bites":{"イワイソメ":[15.0,24.0],"クリル":[10.0,19.0],"ファットワーム":[15.0,24.0]},"tug":2,"hook":"S","pts":40,"dh":"2","th":"3","stars":2,"wx_not":["曇り","霧"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"12-25","alt":null},{"spot":1,"sc":0,"id":28942,"en":"Tarnished Shark","ja":"ターニッシュシャーク","ord":4,"pref":["ファットワーム"],"bites":{"イワイソメ":[20.0,37.0],"クリル":[20.0,37.0],"ファットワーム":[15.0,32.0]},"tug":3,"hook":"S","pts":34,"dh":"2","th":"3","stars":2,"wx_not":["暴雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"15-37","alt":null},{"spot":1,"sc":0,"id":28939,"en":"Rosy Bream","ja":"ローズブリーム","ord":5,"pref":["クリル"],"bites":{"イワイソメ":[12.0,18.0],"クリル":[7.0,13.0],"ファットワーム":[12.0,18.0]},"tug":1,"hook":"P","pts":34,"dh":"3-4","th":"5-7","stars":2,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-19","alt":null},{"spot":1,"sc":0,"id":29734,"en":"Cyan Octopus","ja":"シアンオクトパス","ord":6,"pref":["クリル"],"bites":{"イワイソメ":[17.0,28.0],"クリル":[17.0,28.0],"ファットワーム":[17.0,28.0]},"tug":2,"hook":"S","pts":59,"dh":"4","th":"7","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"17-29","alt":null},{"spot":1,"sc":0,"id":29721,"en":"Heavenswimmer","ja":"ヘヴンリーフィッシュ","ord":7,"pref":["イワイソメ"],"bites":{"イワイソメ":[15.0,25.0],"クリル":[15.0,25.0],"ファットワーム":[15.0,25.0]},"tug":1,"hook":"P","pts":50,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"15-26","alt":null},{"spot":1,"sc":0,"id":29784,"en":"Spectral Megalodon","ja":"スペクトラルメガロドン","ord":8,"pref":["クリル"],"bites":{"イワイソメ":[20.0,37.0],"クリル":[20.0,37.0],"ファットワーム":[20.0,37.0]},"tug":3,"hook":"S","pts":100,"dh":"1","th":"1","stars":4,"wx_not":["快晴"],"times":[],"role":"trigger","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"19-37","alt":null},{"spot":1,"sc":0,"id":29744,"en":"Drunkfish","ja":"ドランカードフィッシュ","ord":9,"pref":["クリル"],"bites":{"クリル":[15.0,28.0]},"tug":3,"hook":"S","pts":253,"dh":"1","th":"1","stars":4,"wx_not":[],"times":[],"role":"intuition","intu":{"req":[["ガラディオンアンチョビ",3]],"sec":60},"minion":false,"noic":false,"selfmooch":false,"tc":"17-28","alt":null},{"spot":1,"sc":1,"id":29766,"en":"Merman's Mane","ja":"マーマンヘアー","ord":10,"pref":["クリル"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"グロウワーム":[4.0,6.0]},"tug":2,"hook":"S","pts":94,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-6","alt":null},{"spot":1,"sc":1,"id":29749,"en":"Heavenskey","ja":"キー・オブ・ヘヴン","ord":11,"pref":["イワイソメ"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"グロウワーム":[2.0,3.0]},"tug":1,"hook":"P","pts":67,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-3","alt":null},{"spot":1,"sc":1,"id":29750,"en":"Ghost Shark","ja":"ゴーストシャーク","ord":12,"pref":["ファットワーム"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"グロウワーム":[5.0,7.0]},"tug":2,"hook":"S","pts":78,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-7","alt":null},{"spot":1,"sc":1,"id":29754,"en":"Fishmonger","ja":"フィッシュモンガー","ord":13,"pref":["ファットワーム"],"bites":{"イワイソメ":[4.5,8.0],"クリル":[4.5,8.0],"ファットワーム":[4.5,8.0],"グロウワーム":[4.5,8.0]},"tug":2,"hook":"S","pts":78,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-8","alt":null},{"spot":1,"sc":1,"id":29752,"en":"Navigator's Print","ja":"リムレーンプリント","ord":14,"pref":["クリル"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"グロウワーム":[3.0,4.0]},"tug":1,"hook":"P","pts":71,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":1,"sc":1,"id":29753,"en":"Casket Oyster","ja":"ネイルドオイスター","ord":15,"pref":["イワイソメ"],"bites":{"イワイソメ":[7.0,11.0]},"tug":1,"hook":"P","pts":222,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-11","alt":null},{"spot":1,"sc":1,"id":29751,"en":"Quicksilver Blade","ja":"クイックシルバーブレード","ord":16,"pref":["ファットワーム"],"bites":{"ファットワーム":[5.0,7.0]},"tug":2,"hook":"S","pts":213,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-7","alt":null},{"spot":1,"sc":1,"id":29782,"en":"Funnel Shark","ja":"ファンネルシャーク","ord":17,"pref":["ファットワーム"],"bites":{"ファットワーム":[7.0,11.0]},"tug":3,"hook":"S","pts":213,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-11","alt":null},{"spot":1,"sc":1,"id":29756,"en":"Nimble Dancer","ja":"ニンブルダンサー","ord":18,"pref":["イワイソメ"],"bites":{"イワイソメ":[12.0,16.0]},"tug":1,"hook":"P","pts":444,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"12-16","alt":null},{"spot":1,"sc":1,"id":29788,"en":"Sothis","ja":"ソティス","ord":19,"pref":["グロウワーム"],"bites":{"グロウワーム":[9.0,12.0]},"tug":3,"hook":"S","pts":500,"dh":"1","th":"1","stars":5,"wx_not":[],"times":["夜"],"role":"legend","intu":{"req":[["キー・オブ・ヘヴン",2],["リムレーンプリント",1]],"sec":15},"minion":false,"noic":false,"selfmooch":false,"tc":"9+","alt":null},{"spot":2,"sc":0,"id":29722,"en":"Ghoul Barracuda","ja":"グールバラクーダ","ord":0,"pref":["クリル"],"bites":{"イワイソメ":[4.0,8.0],"クリル":[4.0,8.0],"ファットワーム":[4.0,8.0]},"tug":2,"hook":"S","pts":10,"dh":"2","th":"3","stars":1,"wx_not":["風","暴風"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-11","alt":null},{"spot":2,"sc":0,"id":29739,"en":"La Noscean Jelly","ja":"ラノシアンジェリー","ord":1,"pref":["イワイソメ"],"bites":{"イワイソメ":[2.0,5.0],"クリル":[2.0,5.0],"ファットワーム":[2.0,5.0]},"tug":1,"hook":"P","pts":10,"dh":"3-4","th":"5-7","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-8","alt":null},{"spot":2,"sc":0,"id":28941,"en":"Sunfly","ja":"サニーバタフライ","ord":2,"pref":["イワイソメ"],"bites":{"イワイソメ":[5.0,9.0],"クリル":[5.0,9.0],"ファットワーム":[5.0,9.0]},"tug":1,"hook":"P","pts":10,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-12","alt":null},{"spot":2,"sc":0,"id":29724,"en":"Marine Bomb","ja":"マリンボム","ord":3,"pref":["クリル"],"bites":{"イワイソメ":[5.0,9.0],"クリル":[5.0,9.0],"ファットワーム":[9.0,14.0]},"tug":1,"hook":"P","pts":27,"dh":"2","th":"3","stars":2,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-14","alt":null},{"spot":2,"sc":0,"id":29740,"en":"Shaggy Seadragon","ja":"シャギーシードラゴン","ord":4,"pref":["イワイソメ"],"bites":{"イワイソメ":[9.0,16.0],"クリル":[14.0,22.0],"ファットワーム":[14.0,22.0]},"tug":1,"hook":"P","pts":35,"dh":"4","th":"7","stars":2,"wx_not":["曇り","霧"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"9-22","alt":null},{"spot":2,"sc":0,"id":29725,"en":"Momora Mora","ja":"モモラ・モラ","ord":5,"pref":["ファットワーム"],"bites":{"イワイソメ":[13.0,21.0],"クリル":[13.0,21.0],"ファットワーム":[8.0,17.0],"泳がせ:グールバラクーダ":[8.0,17.0]},"tug":3,"hook":"S","pts":22,"dh":"2","th":"3","stars":2,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"8-22","alt":null},{"spot":2,"sc":0,"id":29726,"en":"Merlthor Butterfly","ja":"メルトールバタフライ","ord":6,"pref":["イワイソメ"],"bites":{"イワイソメ":[17.0,28.0],"クリル":[17.0,28.0],"ファットワーム":[17.0,28.0]},"tug":1,"hook":"P","pts":51,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"17-28","alt":null},{"spot":2,"sc":0,"id":29727,"en":"Gladius","ja":"グラディウス","ord":7,"pref":["泳がせ:グールバラクーダ"],"bites":{"泳がせ:グールバラクーダ":[7.0,14.0]},"tug":2,"hook":"S","pts":49,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"","alt":null},{"spot":2,"sc":0,"id":29785,"en":"Spectral Discus","ja":"スペクトラルディスカス","ord":8,"pref":["クリル"],"bites":{"イワイソメ":[19.0,34.0],"クリル":[21.0,37.0],"ファットワーム":[21.0,37.0]},"tug":3,"hook":"P","pts":100,"dh":"1","th":"1","stars":4,"wx_not":["快晴"],"times":[],"role":"trigger","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"21-37","alt":null},{"spot":2,"sc":0,"id":29745,"en":"Little Leviathan","ja":"リトルリヴァイアサン","ord":9,"pref":["ファットワーム"],"bites":{"ファットワーム":[16.0,28.0]},"tug":3,"hook":"S","pts":204,"dh":"1","th":"1","stars":4,"wx_not":[],"times":[],"role":"intuition","intu":{"req":[["グラディウス",1]],"sec":60},"minion":false,"noic":false,"selfmooch":false,"tc":"18-28","alt":null},{"spot":2,"sc":1,"id":29757,"en":"Sea Nettle","ja":"シーネトル","ord":10,"pref":["イワイソメ"],"bites":{"イワイソメ":[6.0,8.0]},"tug":1,"hook":"P","pts":156,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6.5-8","alt":null},{"spot":2,"sc":1,"id":29758,"en":"Great Grandmarlin","ja":"グランドマーリン","ord":11,"pref":["泳がせ:ハイエーテルラウス"],"bites":{"泳がせ:ハイエーテルラウス":[2.0,3.0]},"tug":2,"hook":"S","pts":127,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"","alt":null},{"spot":2,"sc":1,"id":29759,"en":"Shipwreck's Sail","ja":"レックドクロス","ord":12,"pref":["ファットワーム"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"シュリンプフィーダー":[2.0,3.0]},"tug":2,"hook":"S","pts":59,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-3","alt":null},{"spot":2,"sc":1,"id":29779,"en":"Charlatan Survivor","ja":"シャーラタンサバイバー","ord":13,"pref":["クリル"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"シュリンプフィーダー":[3.0,4.0]},"tug":1,"hook":"P","pts":69,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":2,"sc":1,"id":29761,"en":"Hi-aetherlouse","ja":"ハイエーテルラウス","ord":14,"pref":["イワイソメ"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"シュリンプフィーダー":[3.0,4.0]},"tug":1,"hook":"P","pts":65,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":2,"sc":1,"id":29760,"en":"Azeyma's Sleeve","ja":"アーゼマの垂衣","ord":15,"pref":["クリル"],"bites":{"イワイソメ":[3.5,6.0],"クリル":[3.5,6.0],"ファットワーム":[3.5,6.0],"シュリンプフィーダー":[3.5,6.0]},"tug":1,"hook":"P","pts":69,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-6","alt":null},{"spot":2,"sc":1,"id":29763,"en":"Aetheric Seadragon","ja":"エーテリックシードラゴン","ord":16,"pref":["泳がせ:ハイエーテルラウス"],"bites":{"泳がせ:ハイエーテルラウス":[3.0,6.0]},"tug":2,"hook":"S","pts":245,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"","alt":null},{"spot":2,"sc":1,"id":29755,"en":"Mythril Sovereign","ja":"ミスリルソブリン","ord":17,"pref":["クリル"],"bites":{"クリル":[5.0,6.0]},"tug":2,"hook":"S","pts":196,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-6","alt":null},{"spot":2,"sc":1,"id":29765,"en":"Roguesaurus","ja":"ロガサウルス","ord":18,"pref":["泳がせ:ハイエーテルラウス"],"bites":{"泳がせ:ハイエーテルラウス":[3.0,4.0]},"tug":3,"hook":"S","pts":345,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"","alt":null},{"spot":2,"sc":1,"id":29789,"en":"Coral Manta","ja":"コーラルマンタ","ord":19,"pref":["シュリンプフィーダー"],"bites":{"シュリンプフィーダー":[9.0,12.0]},"tug":3,"hook":"S","pts":500,"dh":"1","th":"1","stars":5,"wx_not":[],"times":["夜"],"role":"legend","intu":{"req":[["グランドマーリン",2]],"sec":15},"minion":false,"noic":false,"selfmooch":false,"tc":"9+","alt":null},{"spot":3,"sc":0,"id":29736,"en":"Floefish","ja":"ドリフトアイスフィッシュ","ord":0,"pref":["イワイソメ"],"bites":{"イワイソメ":[4.0,8.0],"クリル":[4.0,8.0],"ファットワーム":[4.0,8.0]},"tug":1,"hook":"P","pts":13,"dh":"2","th":"3","stars":1,"wx_not":["雪","吹雪"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"4-11","alt":null},{"spot":3,"sc":0,"id":29737,"en":"Megasquid","ja":"メガスキッド","ord":1,"pref":["ファットワーム"],"bites":{"イワイソメ":[6.0,10.0],"クリル":[6.0,10.0],"ファットワーム":[6.0,10.0]},"tug":2,"hook":"S","pts":11,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-14","alt":null},{"spot":3,"sc":0,"id":29738,"en":"Oschon's Stone","ja":"オシュオンズストーン","ord":2,"pref":["ファットワーム"],"bites":{"イワイソメ":[12.0,22.0],"クリル":[12.0,22.0],"ファットワーム":[12.0,22.0],"泳がせ:スロウンダガー":[15.0,25.0]},"tug":2,"hook":"S","pts":11,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"10-26","alt":null},{"spot":3,"sc":0,"id":29718,"en":"Tossed Dagger","ja":"スロウンダガー","ord":3,"pref":["イワイソメ"],"bites":{"イワイソメ":[7.0,14.0],"クリル":[12.0,18.0],"ファットワーム":[12.0,18.0]},"tug":1,"hook":"P","pts":27,"dh":"2","th":"3","stars":2,"wx_not":["吹雪"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-18","alt":null},{"spot":3,"sc":0,"id":28940,"en":"Tripod Fish","ja":"トライポッド","ord":4,"pref":["クリル"],"bites":{"イワイソメ":[15.0,24.0],"クリル":[10.0,19.0],"ファットワーム":[15.0,24.0]},"tug":1,"hook":"P","pts":43,"dh":"2","th":"3","stars":2,"wx_not":["曇り","霧"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"10-24","alt":null},{"spot":3,"sc":0,"id":29741,"en":"Net Crawler","ja":"スパイダークラブ","ord":5,"pref":["クリル"],"bites":{"イワイソメ":[14.0,22.0],"クリル":[9.0,17.0],"ファットワーム":[14.0,22.0]},"tug":2,"hook":"S","pts":36,"dh":"2","th":"3","stars":2,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"10-22","alt":null},{"spot":3,"sc":0,"id":29720,"en":"Merlthor Lobster","ja":"メルトールロブスター","ord":6,"pref":["クリル"],"bites":{"イワイソメ":[17.0,28.0],"クリル":[17.0,28.0],"ファットワーム":[17.0,28.0]},"tug":1,"hook":"P","pts":45,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"16-28","alt":null},{"spot":3,"sc":0,"id":29743,"en":"Elder Dinichthys","ja":"エルダー・ディニクティス","ord":7,"pref":["泳がせ:スロウンダガー"],"bites":{"泳がせ:スロウンダガー":[10.0,17.0]},"tug":2,"hook":"S","pts":52,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"","alt":null},{"spot":3,"sc":0,"id":29786,"en":"Spectral Sea Bo","ja":"スペクトラルシーホース","ord":8,"pref":["イワイソメ"],"bites":{"イワイソメ":[20.0,36.0],"クリル":[20.0,36.0],"ファットワーム":[20.0,36.0]},"tug":3,"hook":"P","pts":100,"dh":"1","th":"1","stars":4,"wx_not":["快晴"],"times":[],"role":"trigger","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"21-39","alt":null},{"spot":3,"sc":0,"id":29747,"en":"Shooting Star","ja":"海の流星","ord":9,"pref":["イワイソメ"],"bites":{"イワイソメ":[16.0,28.0]},"tug":3,"hook":"P","pts":226,"dh":"1","th":"1","stars":4,"wx_not":[],"times":[],"role":"intuition","intu":{"req":[["エルダー・ディニクティス",1]],"sec":60},"minion":false,"noic":false,"selfmooch":false,"tc":"20-28","alt":null},{"spot":3,"sc":1,"id":29748,"en":"Hammerclaw","ja":"ハンマーロブスター","ord":10,"pref":["クリル"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"ヘヴィメタルジグ":[4.0,6.0]},"tug":1,"hook":"P","pts":69,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-5","alt":null},{"spot":3,"sc":1,"id":29776,"en":"Coccosteus","ja":"コッコステウス","ord":11,"pref":["ファットワーム"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"ヘヴィメタルジグ":[2.0,3.0]},"tug":2,"hook":"S","pts":79,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-3","alt":null},{"spot":3,"sc":1,"id":29777,"en":"Bartholomew the Chopper","ja":"ザ・チョッパー","ord":12,"pref":["イワイソメ"],"bites":{"イワイソメ":[5.0,6.0]},"tug":1,"hook":"P","pts":221,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-6","alt":null},{"spot":3,"sc":1,"id":29778,"en":"Prowler","ja":"タイガーキャットコッド","ord":13,"pref":["イワイソメ"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"ヘヴィメタルジグ":[3.0,4.0]},"tug":1,"hook":"P","pts":79,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":3,"sc":1,"id":29773,"en":"Mopbeard","ja":"モッピィビアード","ord":14,"pref":["クリル"],"bites":{"クリル":[5.5,8.0]},"tug":2,"hook":"S","pts":198,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-8","alt":null},{"spot":3,"sc":1,"id":29771,"en":"Wild Urchin","ja":"ワイルドアーチン","ord":15,"pref":["イワイソメ"],"bites":{"イワイソメ":[3.5,6.0],"クリル":[3.5,6.0],"ファットワーム":[3.5,6.0],"ヘヴィメタルジグ":[6.0,9.0]},"tug":1,"hook":"P","pts":79,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-9","alt":null},{"spot":3,"sc":1,"id":29781,"en":"Gugrusaurus","ja":"ググリューサウルス","ord":16,"pref":["ファットワーム"],"bites":{"イワイソメ":[4.0,8.0],"クリル":[4.0,8.0],"ファットワーム":[4.0,8.0],"ヘヴィメタルジグ":[4.0,8.0]},"tug":3,"hook":"S","pts":79,"dh":"3-4","th":"5-7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-8","alt":null},{"spot":3,"sc":1,"id":29764,"en":"Coral Seadragon","ja":"コーラルシードラゴン","ord":17,"pref":["イワイソメ"],"bites":{"イワイソメ":[7.0,11.0]},"tug":1,"hook":"P","pts":189,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-11","alt":null},{"spot":3,"sc":1,"id":29783,"en":"The Fallen One","ja":"フォーレンワン","ord":18,"pref":["クリル"],"bites":{"クリル":[7.0,10.0]},"tug":2,"hook":"S","pts":374,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7+","alt":null},{"spot":3,"sc":1,"id":29791,"en":"Elasmosaurus","ja":"エラスモサウルス","ord":19,"pref":["ヘヴィメタルジグ"],"bites":{"ヘヴィメタルジグ":[9.0,12.0]},"tug":3,"hook":"S","pts":500,"dh":"1","th":"1","stars":5,"wx_not":[],"times":["昼"],"role":"legend","intu":{"req":[["ググリューサウルス",3]],"sec":15},"minion":false,"noic":false,"selfmooch":false,"tc":"9+","alt":null},{"spot":4,"sc":0,"id":29728,"en":"Rhotano Wahoo","ja":"ロータノワフー","ord":0,"pref":["クリル"],"bites":{"イワイソメ":[6.0,11.0],"クリル":[6.0,11.0],"ファットワーム":[6.0,11.0]},"tug":2,"hook":"S","pts":13,"dh":"2","th":"3","stars":1,"wx_not":["灼熱波"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-14","alt":null},{"spot":4,"sc":0,"id":29729,"en":"Rhotano Sardine","ja":"ロータノサーディン","ord":1,"pref":["イワイソメ"],"bites":{"イワイソメ":[6.0,11.0],"クリル":[6.0,11.0],"ファットワーム":[6.0,11.0]},"tug":1,"hook":"P","pts":10,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-14","alt":null},{"spot":4,"sc":0,"id":29730,"en":"Deep Plaice","ja":"ディープシー・プレイス","ord":2,"pref":["クリル"],"bites":{"イワイソメ":[7.0,12.0],"クリル":[7.0,12.0],"ファットワーム":[7.0,12.0]},"tug":2,"hook":"S","pts":15,"dh":"2","th":"3","stars":1,"wx_not":["砂塵","灼熱波"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"8-15","alt":null},{"spot":4,"sc":0,"id":29731,"en":"Crimson Monkfish","ja":"クリムゾンモンクフィッシュ","ord":3,"pref":["ファットワーム"],"bites":{"イワイソメ":[12.0,18.0],"クリル":[12.0,18.0],"ファットワーム":[7.0,14.0]},"tug":2,"hook":"S","pts":32,"dh":"3-4","th":"5-7","stars":2,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"9-19","alt":null},{"spot":4,"sc":0,"id":29735,"en":"Chrome Hammerhead","ja":"クロムハンマーヘッド","ord":4,"pref":["ファットワーム"],"bites":{"イワイソメ":[20.0,33.0],"クリル":[20.0,33.0],"ファットワーム":[15.0,28.0]},"tug":3,"hook":"S","pts":32,"dh":"4","th":"7","stars":2,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"15-34","alt":null},{"spot":4,"sc":0,"id":29733,"en":"Ogre Eel","ja":"オーガイール","ord":5,"pref":["ファットワーム"],"bites":{"イワイソメ":[13.0,20.0],"クリル":[13.0,20.0],"ファットワーム":[8.0,15.0]},"tug":2,"hook":"S","pts":38,"dh":"2","th":"3","stars":2,"wx_not":["曇り","霧"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"9-20","alt":null},{"spot":4,"sc":0,"id":29742,"en":"Dark Nautilus","ja":"ダークノーチラス","ord":6,"pref":["クリル"],"bites":{"イワイソメ":[17.0,27.0],"クリル":[17.0,26.0],"ファットワーム":[17.0,27.0]},"tug":1,"hook":"P","pts":46,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"15-27","alt":null},{"spot":4,"sc":0,"id":29732,"en":"Lampfish","ja":"ランプフィッシュ","ord":7,"pref":["イワイソメ"],"bites":{"イワイソメ":[11.0,16.0],"クリル":[11.0,16.0],"ファットワーム":[11.0,16.0]},"tug":1,"hook":"P","pts":47,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"12-17","alt":null},{"spot":4,"sc":0,"id":29787,"en":"Spectral Bass","ja":"スペクトラルバス","ord":8,"pref":["ファットワーム"],"bites":{"イワイソメ":[21.0,36.0],"クリル":[21.0,36.0],"ファットワーム":[21.0,36.0]},"tug":3,"hook":"S","pts":100,"dh":"1","th":"1","stars":4,"wx_not":["快晴"],"times":[],"role":"trigger","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"20-37","alt":null},{"spot":4,"sc":0,"id":29746,"en":"Sabaton","ja":"シーサバトン","ord":9,"pref":["クリル"],"bites":{"クリル":[11.0,19.0]},"tug":3,"hook":"P","pts":204,"dh":"1","th":"1","stars":4,"wx_not":[],"times":[],"role":"intuition","intu":{"req":[["クリムゾンモンクフィッシュ",2]],"sec":60},"minion":false,"noic":false,"selfmooch":false,"tc":"14-19","alt":null},{"spot":4,"sc":1,"id":29775,"en":"Aronnax","ja":"アロナクス","ord":10,"pref":["クリル"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"ラットの尾":[2.0,3.0]},"tug":1,"hook":"P","pts":95,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-3","alt":null},{"spot":4,"sc":1,"id":29767,"en":"Sweeper","ja":"フラッフィー","ord":11,"pref":["ファットワーム"],"bites":{"イワイソメ":[5.0,7.0],"ファットワーム":[5.0,7.0]},"tug":2,"hook":"S","pts":216,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-7","alt":null},{"spot":4,"sc":1,"id":29768,"en":"Silencer","ja":"サイレンサー","ord":12,"pref":["イワイソメ"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"ラットの尾":[5.0,7.0]},"tug":1,"hook":"P","pts":89,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-7","alt":null},{"spot":4,"sc":1,"id":29769,"en":"Deep-sea Eel","ja":"ディープシーイール","ord":13,"pref":["ファットワーム"],"bites":{"イワイソメ":[5.0,9.0],"クリル":[5.0,9.0],"ファットワーム":[5.0,9.0],"ラットの尾":[5.0,9.0]},"tug":2,"hook":"S","pts":81,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-9","alt":null},{"spot":4,"sc":1,"id":29770,"en":"Executioner","ja":"エクスキューショナー","ord":14,"pref":["ファットワーム"],"bites":{"ファットワーム":[6.0,9.0]},"tug":3,"hook":"S","pts":216,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-9","alt":null},{"spot":4,"sc":1,"id":29762,"en":"Floating Saucer","ja":"フローティングソーサー","ord":15,"pref":["クリル"],"bites":{"クリル":[7.0,11.0]},"tug":1,"hook":"P","pts":222,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-11","alt":null},{"spot":4,"sc":1,"id":29772,"en":"True Barramundi","ja":"バラマンディ","ord":16,"pref":["クリル"],"bites":{"イワイソメ":[3.5,6.0],"クリル":[3.5,6.0],"ファットワーム":[3.5,6.0],"ラットの尾":[3.5,6.0]},"tug":2,"hook":"S","pts":95,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"4-6","alt":null},{"spot":4,"sc":1,"id":29780,"en":"Prodigal Son","ja":"プロディガルサン","ord":17,"pref":["クリル"],"bites":{"イワイソメ":[3.5,6.0],"クリル":[3.5,6.0],"ファットワーム":[3.5,6.0],"ラットの尾":[3.5,6.0]},"tug":2,"hook":"S","pts":95,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"4-8","alt":null},{"spot":4,"sc":1,"id":29774,"en":"Slipsnail","ja":"スネイルフィッシュ","ord":18,"pref":["イワイソメ"],"bites":{"イワイソメ":[5.0,7.0]},"tug":1,"hook":"P","pts":246,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5+","alt":null},{"spot":4,"sc":1,"id":29790,"en":"Stonescale","ja":"ロックスケイル","ord":19,"pref":["ラットの尾"],"bites":{"ラットの尾":[9.0,13.0]},"tug":3,"hook":"S","pts":500,"dh":"1","th":"1","stars":5,"wx_not":[],"times":["夕"],"role":"legend","intu":{"req":[["ディープシーイール",1],["サイレンサー",1]],"sec":15},"minion":false,"noic":false,"selfmooch":false,"tc":"9+","alt":null},{"spot":5,"sc":0,"id":32055,"en":"Tortoiseshell Crab","ja":"トータスシェルクラブ","ord":0,"pref":["クリル"],"bites":{"イワイソメ":[6.0,12.0],"クリル":[6.0,12.0],"ファットワーム":[6.0,12.0]},"tug":2,"hook":"S","pts":10,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-15","alt":null},{"spot":5,"sc":0,"id":32056,"en":"Lady's Cameo","ja":"エドヴィアの指輪","ord":1,"pref":["イワイソメ"],"bites":{"イワイソメ":[12.0,22.0],"クリル":[12.0,22.0],"ファットワーム":[12.0,22.0]},"tug":1,"hook":"P","pts":15,"dh":"2","th":"3","stars":1,"wx_not":["雷","雷雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"12-26","alt":null},{"spot":5,"sc":0,"id":32057,"en":"Metallic Boxfish","ja":"メタルボックス","ord":2,"pref":["イワイソメ"],"bites":{"イワイソメ":[5.0,11.0],"クリル":[5.0,11.0],"ファットワーム":[5.0,11.0]},"tug":1,"hook":"P","pts":9,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-14","alt":null},{"spot":5,"sc":0,"id":32058,"en":"Goobbue Ray","ja":"グゥーブーレイ","ord":3,"pref":["ファットワーム"],"bites":{"イワイソメ":[17.0,27.0],"クリル":[17.0,27.0],"ファットワーム":[12.0,22.0]},"tug":2,"hook":"S","pts":33,"dh":"2","th":"3","stars":2,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"13-27","alt":null},{"spot":5,"sc":0,"id":32059,"en":"Watermoura","ja":"シーワモーラ","ord":4,"pref":["クリル"],"bites":{"イワイソメ":[14.0,22.0],"クリル":[9.0,17.0],"ファットワーム":[14.0,22.0]},"tug":1,"hook":"P","pts":41,"dh":"2","th":"3","stars":2,"wx_not":["雷雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"10-22","alt":null},{"spot":5,"sc":0,"id":32060,"en":"King Cobrafish","ja":"キングコブラフィッシュ","ord":5,"pref":["ファットワーム"],"bites":{"イワイソメ":[9.0,12.0],"クリル":[9.0,12.0],"ファットワーム":[5.0,8.0]},"tug":3,"hook":"S","pts":39,"dh":"2","th":"3","stars":2,"wx_not":["曇り","霧"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-13","alt":null},{"spot":5,"sc":0,"id":32061,"en":"Mamahi-mahi","ja":"ママヒマヒ","ord":6,"pref":["ファットワーム"],"bites":{"イワイソメ":[18.0,30.0],"クリル":[18.0,30.0],"ファットワーム":[18.0,30.0]},"tug":3,"hook":"S","pts":58,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"17-30","alt":null},{"spot":5,"sc":0,"id":32062,"en":"Lavandin Remora","ja":"ラバンジンレモラ","ord":7,"pref":["クリル"],"bites":{"イワイソメ":[16.0,26.0],"クリル":[16.0,26.0],"ファットワーム":[16.0,26.0]},"tug":1,"hook":"P","pts":52,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"15-26","alt":null},{"spot":5,"sc":0,"id":32063,"en":"Spectral Butterfly","ja":"スペクトラルバタフライ","ord":8,"pref":["イワイソメ"],"bites":{"イワイソメ":[12.0,18.0],"クリル":[12.0,18.0],"ファットワーム":[12.0,18.0]},"tug":3,"hook":"P","pts":100,"dh":"1","th":"1","stars":4,"wx_not":["快晴"],"times":[],"role":"trigger","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"13-20","alt":null},{"spot":5,"sc":0,"id":32064,"en":"Cieldalaes Geode","ja":"シェルダレージオード","ord":9,"pref":["クリル"],"bites":{"クリル":[13.0,26.0]},"tug":3,"hook":"S","pts":246,"dh":"1","th":"1","stars":4,"wx_not":[],"times":[],"role":"intuition","intu":{"req":[["メタルボックス",3]],"sec":60},"minion":false,"noic":false,"selfmooch":false,"tc":"13-26","alt":null},{"spot":5,"sc":1,"id":32065,"en":"Titanshell Crab","ja":"タイタンシェルクラブ","ord":10,"pref":["クリル"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"イカの切り身":[4.0,6.0]},"tug":2,"hook":"S","pts":84,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-6","alt":null},{"spot":5,"sc":1,"id":32066,"en":"Mythril Boxfish","ja":"ミスリルボックス","ord":11,"pref":["イワイソメ"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"イカの切り身":[4.0,6.0]},"tug":1,"hook":"P","pts":64,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-6","alt":null},{"spot":5,"sc":1,"id":32067,"en":"Mistbeard's Cup","ja":"霧髭の盃","ord":12,"pref":["イカの切り身","どの餌でも"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"イカの切り身":[3.0,4.0]},"tug":2,"hook":"S","pts":84,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":5,"sc":1,"id":32068,"en":"Anomalocaris Saron","ja":"アノマロカリス・サロン","ord":13,"pref":["イカの切り身","どの餌でも"],"bites":{"イワイソメ":[4.0,6.0],"クリル":[4.0,6.0],"ファットワーム":[4.0,6.0],"イカの切り身":[3.0,5.0]},"tug":1,"hook":"P","pts":84,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-6","alt":null},{"spot":5,"sc":1,"id":32069,"en":"Flaming Eel","ja":"フレイミングイール","ord":14,"pref":["クリル"],"bites":{"クリル":[6.0,9.0],"イカの切り身":[6.0,9.0]},"tug":2,"hook":"S","pts":198,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-9","alt":null},{"spot":5,"sc":1,"id":32070,"en":"Jetborne Manta","ja":"ジェットフライマンタ","ord":15,"pref":["ファットワーム"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"イカの切り身":[4.0,6.0]},"tug":3,"hook":"S","pts":75,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-6","alt":null},{"spot":5,"sc":1,"id":32071,"en":"Devil's Sting","ja":"デビルスティンガー","ord":16,"pref":["クリル"],"bites":{"クリル":[7.0,11.0],"イカの切り身":[7.0,11.0]},"tug":2,"hook":"S","pts":201,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7+","alt":null},{"spot":5,"sc":1,"id":32072,"en":"Callichthyid","ja":"カリクティス","ord":17,"pref":["ファットワーム"],"bites":{"ファットワーム":[6.0,8.0]},"tug":3,"hook":"S","pts":178,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-8","alt":null},{"spot":5,"sc":1,"id":32073,"en":"Meandering Mora","ja":"フローティング・モラ","ord":18,"pref":["ファットワーム"],"bites":{"ファットワーム":[7.0,9.0]},"tug":2,"hook":"S","pts":283,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7+","alt":null},{"spot":5,"sc":1,"id":32074,"en":"Hafgufa","ja":"ハーヴグーヴァ","ord":19,"pref":["イカの切り身"],"bites":{"イカの切り身":[9.0,12.0]},"tug":3,"hook":"S","pts":500,"dh":"1","th":"1","stars":5,"wx_not":[],"times":["夜"],"role":"legend","intu":{"req":[["ジェットフライマンタ",2],["霧髭の盃",1]],"sec":15},"minion":false,"noic":false,"selfmooch":false,"tc":"9+","alt":null},{"spot":6,"sc":0,"id":32075,"en":"Thaliak Crab","ja":"サリャクリバークラブ","ord":0,"pref":["イワイソメ"],"bites":{"イワイソメ":[4.0,7.0],"クリル":[4.0,7.0],"ファットワーム":[4.0,7.0]},"tug":1,"hook":"P","pts":9,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-11","alt":null},{"spot":6,"sc":0,"id":32076,"en":"Star of the Destroyer","ja":"ラールガーの星屑","ord":1,"pref":["イワイソメ"],"bites":{"イワイソメ":[7.0,13.0],"クリル":[7.0,13.0],"ファットワーム":[7.0,13.0]},"tug":1,"hook":"P","pts":14,"dh":"2","th":"3","stars":1,"wx_not":["雨","暴雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-17","alt":null},{"spot":6,"sc":0,"id":32077,"en":"True Scad","ja":"トゥルースキャッド","ord":2,"pref":["クリル"],"bites":{"イワイソメ":[6.0,10.0],"クリル":[6.0,10.0],"ファットワーム":[6.0,10.0]},"tug":2,"hook":"S","pts":8,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-14","alt":null},{"spot":6,"sc":0,"id":32078,"en":"Blooded Wrasse","ja":"ブラッディハンプヘッド","ord":3,"pref":["ファットワーム"],"bites":{"イワイソメ":[12.0,17.0],"クリル":[12.0,17.0],"ファットワーム":[7.0,12.0]},"tug":2,"hook":"S","pts":35,"dh":"2","th":"3","stars":2,"wx_not":["暴雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-18","alt":null},{"spot":6,"sc":0,"id":32079,"en":"Bloodpolish Crab","ja":"ブラッディポリッシュ","ord":4,"pref":["イワイソメ"],"bites":{"イワイソメ":[14.0,27.0],"クリル":[19.0,32.0],"ファットワーム":[19.0,32.0]},"tug":1,"hook":"P","pts":28,"dh":"4","th":"7","stars":2,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"16-32","alt":null},{"spot":6,"sc":0,"id":32080,"en":"Blue Stitcher","ja":"ブルーニードル","ord":5,"pref":["クリル"],"bites":{"イワイソメ":[8.0,11.0],"クリル":[3.0,6.0],"ファットワーム":[8.0,11.0]},"tug":1,"hook":"P","pts":30,"dh":"2","th":"3","stars":2,"wx_not":["曇り","霧"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-11","alt":null},{"spot":6,"sc":0,"id":32081,"en":"Bloodfresh Tuna","ja":"ブラッディトゥーナ","ord":6,"pref":["ファットワーム"],"bites":{"イワイソメ":[14.0,21.0],"クリル":[14.0,21.0],"ファットワーム":[14.0,21.0]},"tug":2,"hook":"S","pts":43,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"12-21","alt":null},{"spot":6,"sc":0,"id":32082,"en":"Sunken Mask","ja":"サンクンマスク","ord":7,"pref":["イワイソメ"],"bites":{"イワイソメ":[14.0,22.0],"クリル":[14.0,22.0],"ファットワーム":[14.0,22.0]},"tug":3,"hook":"S","pts":49,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"12-23","alt":null},{"spot":6,"sc":0,"id":32083,"en":"Spectral Eel","ja":"スペクトラルイール","ord":8,"pref":["クリル"],"bites":{"イワイソメ":[14.0,22.0],"クリル":[14.0,22.0],"ファットワーム":[14.0,22.0]},"tug":3,"hook":"S","pts":100,"dh":"1","th":"1","stars":4,"wx_not":["快晴"],"times":[],"role":"trigger","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"14-22","alt":null},{"spot":6,"sc":0,"id":32084,"en":"Bareface","ja":"ベアフェイス","ord":9,"pref":["クリル"],"bites":{"クリル":[8.0,15.0]},"tug":3,"hook":"S","pts":326,"dh":"1","th":"1","stars":4,"wx_not":[],"times":[],"role":"intuition","intu":{"req":[["サンクンマスク",1]],"sec":60},"minion":false,"noic":false,"selfmooch":false,"tc":"8-14","alt":null},{"spot":6,"sc":1,"id":32085,"en":"Oracular Crab","ja":"オラクルクラブ","ord":10,"pref":["イワイソメ"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0]},"tug":1,"hook":"P","pts":102,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-3","alt":null},{"spot":6,"sc":1,"id":32086,"en":"Dravanian Bream","ja":"ドラヴァニアンブリーム","ord":11,"pref":["クリル"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0]},"tug":1,"hook":"P","pts":77,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":6,"sc":1,"id":32087,"en":"Skaldminni","ja":"スコルドミンニー","ord":12,"pref":["クリル"],"bites":{"クリル":[4.5,8.0]},"tug":2,"hook":"S","pts":102,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-8","alt":null},{"spot":6,"sc":1,"id":32088,"en":"Serrated Clam","ja":"セレーテッドクラム","ord":13,"pref":["イワイソメ"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"ピルバグ":[3.0,4.0]},"tug":1,"hook":"P","pts":74,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":6,"sc":1,"id":32089,"en":"Beatific Vision","ja":"ビティフィックビジョン","ord":14,"pref":["ピルバグ"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"ピルバグ":[2.0,3.0]},"tug":2,"hook":"S","pts":77,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-3","alt":null},{"spot":6,"sc":1,"id":32090,"en":"Exterminator","ja":"エクスターミネーター","ord":15,"pref":["イワイソメ"],"bites":{"イワイソメ":[5.5,8.0]},"tug":1,"hook":"P","pts":255,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-8","alt":null},{"spot":6,"sc":1,"id":32091,"en":"Gory Tuna","ja":"ゴーリィトゥーナ","ord":16,"pref":["ファットワーム"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"ピルバグ":[3.0,4.0]},"tug":2,"hook":"S","pts":92,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":6,"sc":1,"id":32092,"en":"Ticinepomis","ja":"ティキネポミス","ord":17,"pref":["ファットワーム"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"ピルバグ":[3.0,4.0]},"tug":3,"hook":"S","pts":92,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":6,"sc":1,"id":32093,"en":"Quartz Hammerhead","ja":"クォーツハンマーヘッド","ord":18,"pref":["ファットワーム"],"bites":{"ファットワーム":[7.0,9.0]},"tug":3,"hook":"S","pts":460,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-10","alt":null},{"spot":6,"sc":1,"id":32094,"en":"Seafaring Toad","ja":"オーシャントード","ord":19,"pref":["ピルバグ"],"bites":{"ピルバグ":[9.0,12.0]},"tug":3,"hook":"P","pts":500,"dh":"1","th":"1","stars":5,"wx_not":[],"times":["昼"],"role":"legend","intu":{"req":[["ビティフィックビジョン",3]],"sec":15},"minion":false,"noic":false,"selfmooch":false,"tc":"9+","alt":null},{"spot":7,"sc":0,"id":32095,"en":"Crow Puffer","ja":"パフィークロウ","ord":0,"pref":["イワイソメ"],"bites":{"イワイソメ":[3.0,6.0],"クリル":[3.0,6.0],"ファットワーム":[3.0,6.0]},"tug":1,"hook":"P","pts":10,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-9","alt":null},{"spot":7,"sc":0,"id":32096,"en":"Rothlyt Kelp","ja":"ロズリトケルプ","ord":1,"pref":["イワイソメ"],"bites":{"イワイソメ":[6.0,11.0],"クリル":[6.0,11.0],"ファットワーム":[6.0,11.0]},"tug":1,"hook":"P","pts":10,"dh":"3-4","th":"5-7","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-14","alt":null},{"spot":7,"sc":0,"id":32097,"en":"Living Lantern","ja":"ホオズキクラゲ","ord":2,"pref":["クリル"],"bites":{"イワイソメ":[6.0,11.0],"クリル":[6.0,11.0],"ファットワーム":[6.0,11.0]},"tug":2,"hook":"S","pts":13,"dh":"2","th":"3","stars":1,"wx_not":["雷","雷雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-13","alt":null},{"spot":7,"sc":0,"id":32098,"en":"Honeycomb Fish","ja":"ハニカムフィッシュ","ord":3,"pref":["イワイソメ"],"bites":{"イワイソメ":[12.0,23.0],"クリル":[17.0,28.0],"ファットワーム":[17.0,28.0]},"tug":1,"hook":"P","pts":29,"dh":"4","th":"7","stars":2,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"14-27","alt":null},{"spot":7,"sc":0,"id":32099,"en":"Godsbed","ja":"海神の寝台","ord":4,"pref":["ファットワーム"],"bites":{"イワイソメ":[17.0,28.0],"クリル":[17.0,28.0],"ファットワーム":[12.0,23.0]},"tug":2,"hook":"S","pts":29,"dh":"2","th":"3","stars":2,"wx_not":["曇り","霧"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"13-27","alt":null},{"spot":7,"sc":0,"id":32100,"en":"Lansquenet","ja":"ランスケネット","ord":5,"pref":["ファットワーム"],"bites":{"イワイソメ":[15.0,25.0],"クリル":[15.0,25.0],"ファットワーム":[11.0,20.0]},"tug":2,"hook":"S","pts":36,"dh":"2","th":"3","stars":2,"wx_not":["雷雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"12-25","alt":null},{"spot":7,"sc":0,"id":32101,"en":"Thavnairian Shark","ja":"サベネアンシャーク","ord":6,"pref":["クリル"],"bites":{"イワイソメ":[12.0,17.0],"クリル":[12.0,17.0],"ファットワーム":[12.0,17.0]},"tug":3,"hook":"S","pts":44,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"10-17","alt":null},{"spot":7,"sc":0,"id":32102,"en":"Nephrite Eel","ja":"ネフライトイール","ord":7,"pref":["クリル"],"bites":{"イワイソメ":[15.0,24.0],"クリル":[15.0,24.0],"ファットワーム":[15.0,24.0]},"tug":2,"hook":"S","pts":44,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"14-24","alt":null},{"spot":7,"sc":0,"id":32103,"en":"Spectresaur","ja":"スペクトラルザウルス","ord":8,"pref":["ファットワーム"],"bites":{"イワイソメ":[15.0,24.0],"クリル":[15.0,24.0],"ファットワーム":[15.0,24.0]},"tug":3,"hook":"S","pts":100,"dh":"1","th":"1","stars":4,"wx_not":["快晴"],"times":[],"role":"trigger","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"16-24","alt":null},{"spot":7,"sc":0,"id":32104,"en":"Ginkgo Fin","ja":"ギンコフィッシュ","ord":9,"pref":["イワイソメ"],"bites":{"イワイソメ":[11.0,18.0]},"tug":3,"hook":"P","pts":238,"dh":"1","th":"1","stars":4,"wx_not":[],"times":[],"role":"intuition","intu":{"req":[["ロズリトケルプ",3]],"sec":60},"minion":false,"noic":false,"selfmooch":false,"tc":"12-18","alt":null},{"spot":7,"sc":1,"id":32105,"en":"Garum Jug","ja":"ガルームポット","ord":10,"pref":["イワイソメ"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0]},"tug":1,"hook":"P","pts":107,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-3","alt":null},{"spot":7,"sc":1,"id":32106,"en":"Smooth Jaguar","ja":"シーパンサー","ord":11,"pref":["ファットワーム"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"泳がせ:ロズリトムール":[3.0,4.0]},"tug":2,"hook":"S","pts":70,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":7,"sc":1,"id":32107,"en":"Rothlyt Mussel","ja":"ロズリトムール","ord":12,"pref":["イワイソメ"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0]},"tug":1,"hook":"P","pts":72,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":7,"sc":1,"id":32108,"en":"Levi Elver","ja":"ジュヴナイル・リヴィ","ord":13,"pref":["クリル"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"泳がせ:ロズリトムール":[2.0,3.0]},"tug":2,"hook":"S","pts":75,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-3","alt":null},{"spot":7,"sc":1,"id":32109,"en":"Pearl Bombfish","ja":"パールボム","ord":14,"pref":["クリル"],"bites":{"クリル":[5.0,6.0]},"tug":2,"hook":"S","pts":237,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-6","alt":null},{"spot":7,"sc":1,"id":32110,"en":"Trollfish","ja":"バシバシ","ord":15,"pref":["泳がせ:ロズリトムール"],"bites":{"泳がせ:ロズリトムール":[3.5,6.0]},"tug":1,"hook":"P","pts":202,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"","alt":null},{"spot":7,"sc":1,"id":32111,"en":"Panoptes","ja":"パノプテス","ord":16,"pref":["ファットワーム"],"bites":{"ファットワーム":[4.5,8.0],"泳がせ:ロズリトムール":[7.0,11.0]},"tug":2,"hook":"S","pts":125,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-7","alt":null},{"spot":7,"sc":1,"id":32112,"en":"Crepe Sole","ja":"ゴールデンソール","ord":17,"pref":["イワイソメ"],"bites":{"イワイソメ":[4.5,8.0],"クリル":[4.5,8.0],"ファットワーム":[4.5,8.0]},"tug":1,"hook":"P","pts":72,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-7","alt":null},{"spot":7,"sc":1,"id":32113,"en":"Knifejaw","ja":"ナイフジョー","ord":18,"pref":["クリル"],"bites":{"クリル":[7.0,9.0]},"tug":2,"hook":"S","pts":465,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-10","alt":null},{"spot":7,"sc":1,"id":32114,"en":"Placodus","ja":"プラコドゥス","ord":19,"pref":["泳がせ:ロズリトムール"],"bites":{"泳がせ:ロズリトムール":[9.0,12.0]},"tug":3,"hook":"S","pts":500,"dh":"1","th":"1","stars":5,"wx_not":[],"times":["夕"],"role":"legend","intu":{"req":[["バシバシ",1]],"sec":45},"minion":false,"noic":false,"selfmooch":false,"tc":"","alt":null},{"spot":8,"sc":0,"id":40524,"en":"Deepshade Sardine","ja":"ディープサーディン","ord":0,"pref":["ファットワーム"],"bites":{"イワイソメ":[5.0,9.0],"クリル":[5.0,9.0],"ファットワーム":[5.0,9.0]},"tug":2,"hook":"S","pts":15,"dh":"2","th":"3","stars":1,"wx_not":["風","雷"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-9","alt":null},{"spot":8,"sc":0,"id":40522,"en":"Sirensong Mussel","ja":"セイレーンムセル","ord":1,"pref":["イワイソメ"],"bites":{"イワイソメ":[4.0,7.5],"クリル":[4.0,7.5],"ファットワーム":[4.0,7.5]},"tug":1,"hook":"P","pts":11,"dh":"3","th":"5","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-7","alt":null},{"spot":8,"sc":0,"id":40523,"en":"Arrowhead","ja":"アロウヘッド","ord":2,"pref":["クリル"],"bites":{"イワイソメ":[9.5,18.0],"クリル":[9.5,18.0],"ファットワーム":[9.5,18.0]},"tug":2,"hook":"S","pts":10,"dh":"3","th":"5","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"10-18","alt":null},{"spot":8,"sc":0,"id":40521,"en":"Pink Shrimp","ja":"ピンクシュリンプ","ord":3,"pref":["クリル"],"bites":{"イワイソメ":[13.0,20.0],"クリル":[8.0,15.0],"ファットワーム":[13.0,20.0]},"tug":1,"hook":"P","pts":31,"dh":"3","th":"5","stars":2,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"8-20","alt":null},{"spot":8,"sc":0,"id":40525,"en":"Sirensong Mullet","ja":"シンギングマレ","ord":4,"pref":["クリル"],"bites":{"イワイソメ":[10.0,14.0],"クリル":[5.0,9.0],"ファットワーム":[10.0,14.0]},"tug":2,"hook":"S","pts":42,"dh":"2","th":"3","stars":2,"wx_not":["雷"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"4-14","alt":null},{"spot":8,"sc":0,"id":40526,"en":"Selkie Puffer","ja":"セルキーパファー","ord":5,"pref":["イワイソメ"],"bites":{"イワイソメ":[11.0,20.0],"クリル":[15.0,25.0],"ファットワーム":[15.0,25.0]},"tug":1,"hook":"P","pts":38,"dh":"4","th":"7","stars":2,"wx_not":["曇り","霧"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"11-24","alt":null},{"spot":8,"sc":0,"id":40527,"en":"Poet's Pipe","ja":"詩人のオカリナ","ord":6,"pref":["イワイソメ"],"bites":{"イワイソメ":[17.0,29.0],"クリル":[18.0,30.0],"ファットワーム":[18.0,30.0]},"tug":1,"hook":"P","pts":56,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"18-30","alt":null},{"spot":8,"sc":0,"id":40528,"en":"Marine Matanga","ja":"マタンガスイマー","ord":7,"pref":["ファットワーム"],"bites":{"イワイソメ":[17.0,27.0],"クリル":[17.0,27.0],"ファットワーム":[16.0,26.0]},"tug":3,"hook":"S","pts":47,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"16-27","alt":null},{"spot":8,"sc":0,"id":40529,"en":"Spectral Coelacanth","ja":"スペクトラルシーラカンス","ord":8,"pref":["ファットワーム"],"bites":{"イワイソメ":[15.0,25.0],"クリル":[15.0,25.0],"ファットワーム":[15.0,25.0]},"tug":3,"hook":"S","pts":100,"dh":"1","th":"1","stars":4,"wx_not":["快晴"],"times":[],"role":"trigger","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"15-24","alt":null},{"spot":8,"sc":0,"id":40530,"en":"Dusk Shark","ja":"ダスキーシャーク","ord":9,"pref":["ファットワーム"],"bites":{"ファットワーム":[12.0,23.0]},"tug":3,"hook":"S","pts":263,"dh":"1","th":"1","stars":4,"wx_not":[],"times":[],"role":"intuition","intu":{"req":[["詩人のオカリナ",2]],"sec":60},"minion":false,"noic":false,"selfmooch":false,"tc":"13-23","alt":null},{"spot":8,"sc":1,"id":40531,"en":"Mermaid Scale","ja":"人魚の鱗","ord":10,"pref":["イワイソメ"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"サバの切り身":[5.0,8.0]},"tug":1,"hook":"P","pts":51,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-8","alt":null},{"spot":8,"sc":1,"id":40532,"en":"Broadhead","ja":"ブロードヘッド","ord":11,"pref":["ファットワーム"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"サバの切り身":[3.0,4.0]},"tug":2,"hook":"S","pts":68,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":8,"sc":1,"id":40533,"en":"Vivid Pink Shrimp","ja":"ビビッドピンクシュリンプ","ord":12,"pref":["クリル"],"bites":{"クリル":[5.5,8.0],"サバの切り身":[6.0,7.0]},"tug":1,"hook":"P","pts":144,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-8","alt":null},{"spot":8,"sc":1,"id":40534,"en":"Sunken Coelacanth","ja":"ディープシーラカンス","ord":13,"pref":["ファットワーム"],"bites":{"イワイソメ":[3.5,6.0],"クリル":[3.5,6.0],"ファットワーム":[3.5,6.0],"サバの切り身":[3.5,6.0]},"tug":3,"hook":"S","pts":51,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"4-6","alt":null},{"spot":8,"sc":1,"id":40535,"en":"Siren's Sigh","ja":"セイレーンの吐息","ord":14,"pref":["イワイソメ"],"bites":{"イワイソメ":[5.0,6.0],"サバの切り身":[5.0,6.0]},"tug":1,"hook":"P","pts":101,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-6","alt":null},{"spot":8,"sc":1,"id":40536,"en":"Black-jawed Helicoprion","ja":"ブラックヘリコプリオン","ord":15,"pref":["ファットワーム"],"bites":{"ファットワーム":[5.0,6.0],"サバの切り身":[5.0,6.0]},"tug":3,"hook":"S","pts":102,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-6","alt":null},{"spot":8,"sc":1,"id":40537,"en":"Impostopus","ja":"オクトパスインポスター","ord":16,"pref":["クリル"],"bites":{"クリル":[5.0,6.0],"サバの切り身":[5.0,6.0]},"tug":1,"hook":"P","pts":144,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-6","alt":null},{"spot":8,"sc":1,"id":40538,"en":"Jade Mantis Shrimp","ja":"ジェイドマンティス","ord":17,"pref":["クリル"],"bites":{"クリル":[3.0,4.0]},"tug":1,"hook":"P","pts":72,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":8,"sc":1,"id":40539,"en":"Nymeia's Wheel","ja":"ニメーヤの紡車","ord":18,"pref":["クリル"],"bites":{"クリル":[7.0,8.0]},"tug":2,"hook":"S","pts":289,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-8","alt":null},{"spot":8,"sc":1,"id":40540,"en":"Taniwha","ja":"タニファ","ord":19,"pref":["サバの切り身"],"bites":{"サバの切り身":[9.0,12.0]},"tug":3,"hook":"S","pts":500,"dh":null,"th":null,"stars":5,"wx_not":[],"times":["昼"],"role":"legend","intu":{"req":[["ディープシーラカンス",3]],"sec":15},"minion":false,"noic":false,"selfmooch":false,"tc":"9-11","alt":null},{"spot":9,"sc":0,"id":40541,"en":"Ruby Herring","ja":"クガネニシン","ord":0,"pref":["クリル"],"bites":{"イワイソメ":[5.0,9.0],"クリル":[5.0,9.0],"ファットワーム":[5.0,9.0],"泳がせ:斑海老":[10.0,14.0]},"tug":2,"hook":"S","pts":14,"dh":"2","th":"3","stars":1,"wx_not":["雨","暴雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-9","alt":null},{"spot":9,"sc":0,"id":40542,"en":"Whirlpool Turban","ja":"ウズマキサザエ","ord":1,"pref":["イワイソメ"],"bites":{"イワイソメ":[15.0,29.0],"クリル":[15.0,29.0],"ファットワーム":[15.0,29.0]},"tug":1,"hook":"P","pts":10,"dh":"3","th":"5","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"15-29","alt":null},{"spot":9,"sc":0,"id":40543,"en":"Leopard Prawn","ja":"斑海老","ord":2,"pref":["イワイソメ"],"bites":{"イワイソメ":[5.0,9.0],"クリル":[5.0,9.0],"ファットワーム":[5.0,9.0]},"tug":1,"hook":"P","pts":10,"dh":"3","th":"5","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-9","alt":null},{"spot":9,"sc":0,"id":40544,"en":"Spear Squid","ja":"ヤリイカ","ord":3,"pref":["ファットワーム"],"bites":{"イワイソメ":[17.0,29.0],"クリル":[17.0,29.0],"ファットワーム":[12.5,24.0]},"tug":2,"hook":"S","pts":26,"dh":"3","th":"5","stars":2,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"13-29","alt":null},{"spot":9,"sc":0,"id":40545,"en":"Floating Lantern","ja":"火袋海月","ord":4,"pref":["ファットワーム"],"bites":{"イワイソメ":[11.0,17.0],"クリル":[11.0,17.0],"ファットワーム":[6.0,12.0]},"tug":2,"hook":"S","pts":37,"dh":"2","th":"3","stars":2,"wx_not":["暴雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-17","alt":null},{"spot":9,"sc":0,"id":40546,"en":"Rubescent Tatsunoko","ja":"マダラタツ","ord":5,"pref":["クリル"],"bites":{"イワイソメ":[10.0,14.0],"クリル":[5.0,9.0],"ファットワーム":[10.0,14.0]},"tug":1,"hook":"P","pts":33,"dh":"2","th":"3","stars":2,"wx_not":["曇り","霧"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-14","alt":null},{"spot":9,"sc":0,"id":40547,"en":"Hatatate","ja":"ハタタテハゼ","ord":6,"pref":["イワイソメ"],"bites":{"イワイソメ":[10.0,14.0],"クリル":[11.0,15.0],"ファットワーム":[11.0,15.0],"泳がせ:斑海老":[7.0,12.0]},"tug":1,"hook":"P","pts":53,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"10-15","alt":null},{"spot":9,"sc":0,"id":40548,"en":"Silent Shark","ja":"ネズミザメ","ord":7,"pref":["泳がせ:斑海老"],"bites":{"泳がせ:斑海老":[6.0,12.0]},"tug":3,"hook":"S","pts":35,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"","alt":null},{"spot":9,"sc":0,"id":40549,"en":"Spectral Wrasse","ja":"幻海求仙","ord":8,"pref":["クリル"],"bites":{"イワイソメ":[17.0,29.0],"クリル":[17.0,29.0],"ファットワーム":[17.0,29.0]},"tug":3,"hook":"S","pts":100,"dh":"1","th":"1","stars":4,"wx_not":["快晴"],"times":[],"role":"trigger","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"17-29","alt":null},{"spot":9,"sc":0,"id":40550,"en":"Mizuhiki","ja":"水引魚","ord":9,"pref":["イワイソメ"],"bites":{"イワイソメ":[14.0,26.0]},"tug":3,"hook":"P","pts":263,"dh":"1","th":"1","stars":4,"wx_not":[],"times":[],"role":"intuition","intu":{"req":[["ネズミザメ",2]],"sec":60},"minion":false,"noic":false,"selfmooch":false,"tc":"15-24","alt":null},{"spot":9,"sc":1,"id":40551,"en":"Snapping Koban","ja":"コバンウツボ","ord":10,"pref":["クリル"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"泳がせ:コバンウツボ":[2.0,3.0]},"tug":2,"hook":"S","pts":62,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":true,"tc":"2-3","alt":null},{"spot":9,"sc":1,"id":40552,"en":"Silkweft Prawn","ja":"宝彩海老","ord":11,"pref":["イワイソメ"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0]},"tug":1,"hook":"P","pts":58,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-3","alt":null},{"spot":9,"sc":1,"id":40553,"en":"Stingfin Trevally","ja":"ドクヒラアジ","ord":12,"pref":["クリル"],"bites":{"クリル":[5.5,8.0]},"tug":2,"hook":"S","pts":191,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-8","alt":null},{"spot":9,"sc":1,"id":40554,"en":"Swordtip Squid","ja":"ケンサキイカ","ord":13,"pref":["ファットワーム"],"bites":{"イワイソメ":[8.0,11.0],"クリル":[8.0,11.0],"ファットワーム":[3.5,6.0]},"tug":2,"hook":"S","pts":115,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"4-12","alt":null},{"spot":9,"sc":1,"id":40555,"en":"Mailfish","ja":"ヨロイウオ","ord":14,"pref":["イワイソメ"],"bites":{"イワイソメ":[7.0,11.0]},"tug":1,"hook":"P","pts":198,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"8-11","alt":null},{"spot":9,"sc":1,"id":40556,"en":"Idaten's Bolt","ja":"イダテントビウオ","ord":15,"pref":["クリル"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0]},"tug":1,"hook":"P","pts":62,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":9,"sc":1,"id":40557,"en":"Maelstrom Turban","ja":"タツマキサザエ","ord":16,"pref":["イワイソメ"],"bites":{"イワイソメ":[4.5,8.0],"クリル":[4.5,8.0],"ファットワーム":[4.5,8.0]},"tug":1,"hook":"P","pts":83,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-7","alt":null},{"spot":9,"sc":1,"id":40558,"en":"Shoshitsuki","ja":"ショウシツキ","ord":17,"pref":["ファットワーム"],"bites":{"ファットワーム":[3.0,4.0]},"tug":3,"hook":"S","pts":92,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":9,"sc":1,"id":40559,"en":"Spadefish","ja":"サカタザメ","ord":18,"pref":["クリル"],"bites":{"クリル":[6.0,8.0]},"tug":2,"hook":"S","pts":191,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-8","alt":null},{"spot":9,"sc":1,"id":40560,"en":"Glass Dragon","ja":"瑠璃龍","ord":19,"pref":["泳がせ:コバンウツボ"],"bites":{"泳がせ:コバンウツボ":[8.0,10.0]},"tug":3,"hook":"S","pts":500,"dh":"1","th":"1","stars":5,"wx_not":[],"times":["夜"],"role":"legend","intu":{"req":[["ショウシツキ",2]],"sec":45},"minion":false,"noic":false,"selfmooch":false,"tc":"","alt":null},{"spot":10,"sc":0,"id":40561,"en":"Crimson Kelp","ja":"ベニコンブ","ord":0,"pref":["イワイソメ"],"bites":{"イワイソメ":[4.0,7.0],"クリル":[4.0,7.0],"ファットワーム":[4.0,7.0]},"tug":1,"hook":"P","pts":11,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-7","alt":null},{"spot":10,"sc":0,"id":40562,"en":"Reef Squid","ja":"アオリイカ","ord":1,"pref":["クリル"],"bites":{"イワイソメ":[9.5,18.0],"クリル":[9.5,18.0],"ファットワーム":[9.5,18.0]},"tug":2,"hook":"S","pts":10,"dh":"3","th":"5","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"10-18","alt":null},{"spot":10,"sc":0,"id":40563,"en":"Pinebark Flounder","ja":"マツカワガレイ","ord":2,"pref":["イワイソメ"],"bites":{"イワイソメ":[5.0,9.0],"クリル":[5.0,9.0],"ファットワーム":[5.0,9.0]},"tug":1,"hook":"P","pts":15,"dh":"2","th":"3","stars":1,"wx_not":["風","暴風"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-9","alt":null},{"spot":10,"sc":0,"id":40564,"en":"Mantle Moray","ja":"ハゴロモウツボ","ord":3,"pref":["クリル"],"bites":{"イワイソメ":[10.0,14.0],"クリル":[5.0,9.0],"ファットワーム":[10.0,14.0]},"tug":2,"hook":"S","pts":41,"dh":"2","th":"3","stars":2,"wx_not":["雷"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-14","alt":null},{"spot":10,"sc":0,"id":40567,"en":"Barded Lobster","ja":"馬海老","ord":4,"pref":["イワイソメ"],"bites":{"イワイソメ":[10.0,18.0],"クリル":[15.0,23.0],"ファットワーム":[15.0,23.0]},"tug":1,"hook":"P","pts":33,"dh":"3","th":"5","stars":2,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"10-22","alt":null},{"spot":10,"sc":0,"id":40566,"en":"Sanbaso","ja":"サンバソウ","ord":5,"pref":["イワイソメ"],"bites":{"イワイソメ":[18.0,31.0],"クリル":[18.0,31.0],"ファットワーム":[18.0,31.0]},"tug":2,"hook":"S","pts":38,"dh":"2","th":"3","stars":2,"wx_not":["曇り","霧","暴風"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"14-31","alt":null},{"spot":10,"sc":0,"id":40565,"en":"Shisui Goby","ja":"シスイハゼ","ord":6,"pref":["ファットワーム"],"bites":{"イワイソメ":[18.0,31.0],"クリル":[18.0,31.0],"ファットワーム":[14.0,25.0]},"tug":1,"hook":"P","pts":57,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"19-32","alt":null},{"spot":10,"sc":0,"id":40568,"en":"Violet Sentry","ja":"蒼の仁王","ord":7,"pref":["ファットワーム"],"bites":{"イワイソメ":[14.0,21.0],"クリル":[14.0,21.0],"ファットワーム":[13.0,20.0]},"tug":3,"hook":"S","pts":55,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"13-21","alt":null},{"spot":10,"sc":0,"id":40569,"en":"Spectral Snake Eel","ja":"幻海大蛇","ord":8,"pref":["クリル"],"bites":{"イワイソメ":[15.0,24.0],"クリル":[15.0,24.0],"ファットワーム":[15.0,24.0]},"tug":3,"hook":"S","pts":100,"dh":"1","th":"1","stars":4,"wx_not":["快晴"],"times":[],"role":"trigger","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"15-24","alt":null},{"spot":10,"sc":0,"id":40570,"en":"Heavensent Shark","ja":"アメノトラ","ord":9,"pref":["クリル"],"bites":{"クリル":[15.0,27.0]},"tug":3,"hook":"S","pts":227,"dh":"1","th":"1","stars":4,"wx_not":[],"times":[],"role":"intuition","intu":{"req":[["ベニコンブ",3]],"sec":60},"minion":false,"noic":false,"selfmooch":false,"tc":"16-26","alt":null},{"spot":10,"sc":1,"id":40571,"en":"Fleeting Squid","ja":"バショウイカ","ord":10,"pref":["クリル"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"イカの切り身":[6.0,8.0]},"tug":2,"hook":"S","pts":81,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-8","alt":null},{"spot":10,"sc":1,"id":40572,"en":"Bowbarb Lobster","ja":"弓馬海老","ord":11,"pref":["イワイソメ"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"イカの切り身":[6.0,8.0]},"tug":1,"hook":"P","pts":83,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-8","alt":null},{"spot":10,"sc":1,"id":40573,"en":"Pitch Pickle","ja":"オハグロナマコ","ord":12,"pref":["イワイソメ"],"bites":{"イワイソメ":[5.0,6.0]},"tug":1,"hook":"P","pts":218,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-6","alt":null},{"spot":10,"sc":1,"id":40574,"en":"Senbei Octopus","ja":"センベイダコ","ord":13,"pref":["イワイソメ"],"bites":{"イワイソメ":[4.5,7.5],"クリル":[4.5,7.5],"ファットワーム":[4.5,7.5],"イカの切り身":[4.5,7.5]},"tug":1,"hook":"P","pts":83,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-8","alt":null},{"spot":10,"sc":1,"id":40575,"en":"Tentacle Thresher","ja":"タコクイ","ord":14,"pref":["ファットワーム"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"イカの切り身":[5.0,6.0]},"tug":2,"hook":"S","pts":76,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-6","alt":null},{"spot":10,"sc":1,"id":40576,"en":"Bekko Rockhugger","ja":"ベッコウダンゴウオ","ord":15,"pref":["クリル"],"bites":{"クリル":[5.0,6.0]},"tug":2,"hook":"S","pts":187,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-6","alt":null},{"spot":10,"sc":1,"id":40577,"en":"Yellow Iris","ja":"黄菖蒲","ord":16,"pref":["イワイソメ"],"bites":{"イワイソメ":[6.0,8.0]},"tug":1,"hook":"P","pts":218,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-8","alt":null},{"spot":10,"sc":1,"id":40578,"en":"Crimson Sentry","ja":"紅の仁王","ord":17,"pref":["ファットワーム"],"bites":{"ファットワーム":[6.0,8.0]},"tug":3,"hook":"S","pts":178,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-8","alt":null},{"spot":10,"sc":1,"id":40579,"en":"Flying Squid","ja":"オオスルメイカ","ord":18,"pref":["ファットワーム"],"bites":{"イワイソメ":[8.0,12.0],"クリル":[8.0,12.0],"ファットワーム":[4.5,8.0],"イカの切り身":[8.0,12.0]},"tug":2,"hook":"S","pts":126,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-12","alt":null},{"spot":10,"sc":1,"id":40580,"en":"Hells' Claw","ja":"獄之蟹","ord":19,"pref":["イカの切り身"],"bites":{"イカの切り身":[8.0,11.0]},"tug":3,"hook":"S","pts":500,"dh":"1","th":"1","stars":5,"wx_not":[],"times":["夕"],"role":"legend","intu":{"req":[["オオスルメイカ",1],["バショウイカ",2]],"sec":15},"minion":false,"noic":false,"selfmooch":false,"tc":"9-11","alt":null},{"spot":11,"sc":0,"id":40581,"en":"Catching Carp","ja":"ヘラブナ","ord":0,"pref":["イワイソメ"],"bites":{"イワイソメ":[6.0,10.0],"クリル":[6.0,10.0],"ファットワーム":[6.0,10.0]},"tug":1,"hook":"P","pts":10,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-10","alt":null},{"spot":11,"sc":0,"id":40582,"en":"Garlean Bluegill","ja":"ガレアンギル","ord":1,"pref":["クリル"],"bites":{"イワイソメ":[7.0,12.0],"クリル":[7.0,12.0],"ファットワーム":[7.0,12.0]},"tug":1,"hook":"P","pts":14,"dh":"2","th":"3","stars":1,"wx_not":["雨","暴雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"7-12","alt":null},{"spot":11,"sc":0,"id":40583,"en":"Yanxian Softshell","ja":"ヤンサスッポン","ord":2,"pref":["クリル"],"bites":{"イワイソメ":[8.0,15.0],"クリル":[8.0,15.0],"ファットワーム":[8.0,15.0]},"tug":2,"hook":"S","pts":10,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"8-15","alt":null},{"spot":11,"sc":0,"id":40584,"en":"Princess Salmon","ja":"ヒメマス","ord":3,"pref":["イワイソメ"],"bites":{"イワイソメ":[5.0,9.0],"クリル":[10.0,14.0],"ファットワーム":[10.0,14.0]},"tug":1,"hook":"P","pts":37,"dh":"2","th":"3","stars":2,"wx_not":["曇り","霧"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-14","alt":null},{"spot":11,"sc":0,"id":40585,"en":"Calligraph","ja":"墨鱗魚","ord":4,"pref":["ファットワーム"],"bites":{"イワイソメ":[12.0,18.0],"クリル":[12.0,18.0],"ファットワーム":[8.0,14.0]},"tug":2,"hook":"S","pts":40,"dh":"2","th":"3","stars":2,"wx_not":["暴雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"8-19","alt":null},{"spot":11,"sc":0,"id":40586,"en":"Singular Shrimp","ja":"無二海老","ord":5,"pref":["イワイソメ"],"bites":{"イワイソメ":[13.0,24.0],"クリル":[17.0,29.0],"ファットワーム":[17.0,29.0]},"tug":1,"hook":"P","pts":31,"dh":"3","th":"5","stars":2,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"13-29","alt":null},{"spot":11,"sc":0,"id":40587,"en":"Brocade Carp","ja":"錦鯉","ord":6,"pref":["クリル"],"bites":{"イワイソメ":[14.0,22.0],"クリル":[14.0,22.0],"ファットワーム":[14.0,22.0]},"tug":2,"hook":"S","pts":52,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"14-23","alt":null},{"spot":11,"sc":0,"id":40588,"en":"Yanxian Sturgeon","ja":"ヤンサチョウザメ","ord":7,"pref":["ファットワーム"],"bites":{"イワイソメ":[11.0,16.0],"クリル":[11.0,16.0],"ファットワーム":[11.0,16.0]},"tug":3,"hook":"S","pts":49,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"11-16","alt":null},{"spot":11,"sc":0,"id":40589,"en":"Spectral Kotsu Zetsu","ja":"幻海骨舌","ord":8,"pref":["クリル"],"bites":{"イワイソメ":[17.0,28.0],"クリル":[17.0,28.0],"ファットワーム":[17.0,28.0]},"tug":3,"hook":"S","pts":100,"dh":"1","th":"1","stars":4,"wx_not":["快晴"],"times":[],"role":"trigger","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"16-27","alt":null},{"spot":11,"sc":0,"id":40590,"en":"Fishy Shark","ja":"茂鮫","ord":9,"pref":["ファットワーム"],"bites":{"ファットワーム":[17.0,28.0]},"tug":3,"hook":"S","pts":223,"dh":"1","th":"1","stars":4,"wx_not":[],"times":[],"role":"intuition","intu":{"req":[["ヘラブナ",3]],"sec":60},"minion":false,"noic":false,"selfmooch":false,"tc":"17-27","alt":null},{"spot":11,"sc":1,"id":40591,"en":"Gensui Shrimp","ja":"玄水海老","ord":10,"pref":["イワイソメ"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"ストーンラーヴァ":[3.0,4.0]},"tug":1,"hook":"P","pts":85,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":11,"sc":1,"id":40592,"en":"Yato-no-kami","ja":"ヤトノカミ","ord":11,"pref":["ファットワーム"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"ストーンラーヴァ":[5.0,6.0]},"tug":2,"hook":"S","pts":79,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-6","alt":null},{"spot":11,"sc":1,"id":40593,"en":"Heron's Eel","ja":"アオサギウナギ","ord":12,"pref":["ファットワーム"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"ストーンラーヴァ":[3.0,4.0]},"tug":2,"hook":"S","pts":79,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"3-4","alt":null},{"spot":11,"sc":1,"id":40594,"en":"Crowshadow Mussel","ja":"烏貝","ord":13,"pref":["イワイソメ"],"bites":{"イワイソメ":[4.5,7.0],"クリル":[4.5,7.0],"ファットワーム":[4.5,7.0],"ストーンラーヴァ":[7.0,11.0]},"tug":1,"hook":"P","pts":85,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-11","alt":null},{"spot":11,"sc":1,"id":40595,"en":"Yanxian Goby","ja":"ムニゴビー","ord":14,"pref":["イワイソメ"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"ストーンラーヴァ":[2.0,3.0]},"tug":1,"hook":"P","pts":85,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"2-3","alt":null},{"spot":11,"sc":1,"id":40596,"en":"Iridescent Trout","ja":"ニジマス","ord":15,"pref":["クリル"],"bites":{"クリル":[5.0,6.0]},"tug":1,"hook":"P","pts":184,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-6","alt":null},{"spot":11,"sc":1,"id":40597,"en":"Un-Namazu","ja":"モドリナマズオ","ord":16,"pref":["クリル"],"bites":{"クリル":[5.0,6.0]},"tug":2,"hook":"S","pts":209,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-6","alt":null},{"spot":11,"sc":1,"id":40598,"en":"Gakugyo","ja":"鰐魚","ord":17,"pref":["ファットワーム"],"bites":{"ファットワーム":[6.0,8.0]},"tug":3,"hook":"S","pts":185,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"6-8","alt":null},{"spot":11,"sc":1,"id":40599,"en":"Ginrin Goshiki","ja":"銀鱗五色","ord":18,"pref":["クリル"],"bites":{"クリル":[5.0,6.0]},"tug":2,"hook":"S","pts":209,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":"5-6","alt":null},{"spot":11,"sc":1,"id":40600,"en":"Jewel of Plum Spring","ja":"梅泉宝亀","ord":19,"pref":["ストーンラーヴァ"],"bites":{"ストーンラーヴァ":[5.0,8.0]},"tug":3,"hook":"S","pts":500,"dh":"1","th":"1","stars":5,"wx_not":[],"times":["昼"],"role":"legend","intu":{"req":[["ムニゴビー",2],["玄水海老",1]],"sec":15},"minion":false,"noic":false,"selfmooch":false,"tc":"5-7","alt":null},{"spot":12,"sc":0,"id":51209,"en":"First Mate's Finger","ja":"船頭の太指","ord":0,"pref":["イワイソメ"],"bites":{"イワイソメ":[7.0,9.0],"クリル":[7.0,9.0],"ファットワーム":[7.0,9.0]},"tug":1,"hook":"P","pts":10,"dh":"3","th":"5","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":0,"id":51210,"en":"Specterfish","ja":"スペクターフィッシュ","ord":1,"pref":["クリル"],"bites":{"イワイソメ":[7.0,8.0],"クリル":[7.0,8.0],"ファットワーム":[7.0,8.0]},"tug":2,"hook":"S","pts":15,"dh":"2","th":"3","stars":1,"wx_not":["雨","暴雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":0,"id":51211,"en":"Rhotano Permit","ja":"ロータノパーミット","ord":2,"pref":["ファットワーム"],"bites":{"イワイソメ":[11.0,13.0],"クリル":[11.0,12.0],"ファットワーム":[11.0,12.0]},"tug":2,"hook":"S","pts":11,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":0,"id":51212,"en":"Rhotano Dahlia","ja":"ロータノダーリア","ord":3,"pref":["クリル"],"bites":{"イワイソメ":[17.0,21.0],"クリル":[12.0,14.0],"ファットワーム":[17.0,19.0]},"tug":1,"hook":"P","pts":35,"dh":"2","th":"3","stars":2,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":0,"id":51213,"en":"Lodesmate's Pen","ja":"航海士のペン","ord":4,"pref":["クリル"],"bites":{"イワイソメ":[22.0,24.0],"クリル":[17.0,20.0],"ファットワーム":[20.0,24.0]},"tug":2,"hook":"S","pts":35,"dh":"2","th":"3","stars":2,"wx_not":["暴雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":0,"id":51214,"en":"Rhotano Roosterfish","ja":"ロータノルースター","ord":5,"pref":["ファットワーム"],"bites":{"イワイソメ":[21.0,24.0],"クリル":[21.0,25.0],"ファットワーム":[15.0,18.0]},"tug":2,"hook":"S","pts":40,"dh":"2","th":"3","stars":2,"wx_not":["曇り","霧"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":0,"id":51215,"en":"Rhotanosaurus","ja":"ロータノサウルス","ord":6,"pref":["ファットワーム"],"bites":{"イワイソメ":[20.0,24.0],"クリル":[20.0,24.0],"ファットワーム":[21.0,25.0]},"tug":3,"hook":"S","pts":59,"dh":"3","th":"5","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":0,"id":51216,"en":"Royal Handmaiden","ja":"女王の使い","ord":7,"pref":["イワイソメ"],"bites":{"イワイソメ":[13.0,14.0],"クリル":[14.0,15.0],"ファットワーム":[13.0,14.0]},"tug":1,"hook":"P","pts":52,"dh":"2","th":"3","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":0,"id":51217,"en":"Spectral Starfish","ja":"スペクトラルスターフィッシュ","ord":8,"pref":["イワイソメ"],"bites":{"イワイソメ":[16.0,21.0],"クリル":[16.0,20.0],"ファットワーム":[19.0,19.0]},"tug":3,"hook":"P","pts":100,"dh":null,"th":"1","stars":4,"wx_not":["快晴"],"times":[],"role":"trigger","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":0,"id":51218,"en":"Frolicsome Fish","ja":"おさかなさん","ord":9,"pref":["イワイソメ"],"bites":{"イワイソメ":[10.0,14.0]},"tug":3,"hook":"P","pts":236,"dh":"1","th":null,"stars":4,"wx_not":[],"times":[],"role":"intuition","intu":{"req":[["ロータノダーリア",3]],"sec":60},"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":1,"id":51219,"en":"Captain's Finger","ja":"大船頭の太指","ord":10,"pref":["イワイソメ"],"bites":{"イワイソメ":[2.0,3.0]},"tug":1,"hook":"P","pts":86,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":1,"id":51220,"en":"Bright Red Coral","ja":"深紅珊瑚","ord":11,"pref":["クリル"],"bites":{"イワイソメ":[4.0,5.0],"クリル":[4.0,5.0],"ファットワーム":[4.0,5.0]},"tug":1,"hook":"P","pts":84,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":1,"id":51221,"en":"Royal Favorite","ja":"女王の大使","ord":12,"pref":["イワイソメ"],"bites":{"イワイソメ":[4.0,5.0],"クリル":[4.0,5.0],"ファットワーム":[4.0,5.0]},"tug":1,"hook":"P","pts":69,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":1,"id":51222,"en":"Pirate's Purse","ja":"パイレーツパース","ord":13,"pref":["イワイソメ"],"bites":{"イワイソメ":[6.0,7.0]},"tug":1,"hook":"P","pts":199,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":1,"id":51223,"en":"Captain's Pen","ja":"船長のペン","ord":14,"pref":["クリル"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0]},"tug":2,"hook":"S","pts":58,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":1,"id":51224,"en":"Tylosaurus","ja":"ティロサウルス","ord":15,"pref":["ファットワーム"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"泳がせ:船長のペン":[4.0,4.0],"泳がせ:シェルダレールースター":[4.0,4.0]},"tug":3,"hook":"S","pts":68,"dh":"3","th":"5","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":1,"id":51225,"en":"Cieldalaes Roosterfish","ja":"シェルダレールースター","ord":16,"pref":["泳がせ:船長のペン"],"bites":{"泳がせ:船長のペン":[5.0,6.0]},"tug":2,"hook":"S","pts":100,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":1,"id":51226,"en":"Renegade Rhotanosaurus","ja":"ダークロータノサウルス","ord":17,"pref":["ファットワーム"],"bites":{"ファットワーム":[5.0,6.0],"泳がせ:船長のペン":[6.0,6.0]},"tug":3,"hook":"S","pts":160,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":1,"id":51227,"en":"Red Boarfish","ja":"レッドボアーフィッシュ","ord":18,"pref":["クリル"],"bites":{"クリル":[6.0,8.0]},"tug":2,"hook":"S","pts":200,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":12,"sc":1,"id":51228,"en":"Akupara","ja":"アクパーラ","ord":19,"pref":["泳がせ:シェルダレールースター"],"bites":{"泳がせ:シェルダレールースター":[8.0,8.0]},"tug":3,"hook":"P","pts":500,"dh":null,"th":null,"stars":5,"wx_not":[],"times":["夕"],"role":"legend","intu":{"req":[["シェルダレールースター",2]],"sec":20},"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":0,"id":51229,"en":"Red Mantis","ja":"ベニシャコ","ord":0,"pref":["イワイソメ"],"bites":{"イワイソメ":[7.0,9.0],"クリル":[7.0,9.0],"ファットワーム":[7.0,9.0]},"tug":1,"hook":"P","pts":8,"dh":"3","th":"5","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":0,"id":51230,"en":"Datli Gwl","ja":"タトゥルギュル","ord":1,"pref":["クリル"],"bites":{"イワイソメ":[7.0,7.0],"クリル":[7.0,8.0],"ファットワーム":[7.0,8.0]},"tug":2,"hook":"S","pts":9,"dh":"2","th":"3","stars":1,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":0,"id":51231,"en":"Agama's Strand","ja":"アガマの白髭","ord":2,"pref":["イワイソメ"],"bites":{"イワイソメ":[4.0,5.0],"クリル":[4.0,5.0],"ファットワーム":[4.0,5.0]},"tug":1,"hook":"P","pts":13,"dh":"2","th":"3","stars":1,"wx_not":["雨","暴雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":0,"id":51232,"en":"Palaka's Blade","ja":"パーラカナイフ","ord":3,"pref":["イワイソメ"],"bites":{"イワイソメ":[13.0,15.0],"クリル":[18.0,20.0],"ファットワーム":[18.0,20.0]},"tug":1,"hook":"P","pts":36,"dh":"2","th":"3","stars":2,"wx_not":["暴雨"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":0,"id":51233,"en":"Parjanya Wrasse","ja":"パルジャニヤ・ラス","ord":4,"pref":["クリル"],"bites":{"イワイソメ":[10.0,10.0],"クリル":[4.0,5.0],"ファットワーム":[10.0,10.0]},"tug":2,"hook":"S","pts":31,"dh":"2","th":"3","stars":2,"wx_not":["曇り","霧"],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":0,"id":51234,"en":"Simolestes","ja":"シモレステス","ord":5,"pref":["ファットワーム"],"bites":{"イワイソメ":[19.0,21.0],"クリル":[19.0,21.0],"ファットワーム":[14.0,16.0]},"tug":2,"hook":"S","pts":27,"dh":"3","th":"5","stars":2,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":0,"id":51235,"en":"Thavnasaurus","ja":"サベネアンサウルス","ord":6,"pref":["ファットワーム"],"bites":{"イワイソメ":[20.0,20.0],"クリル":[18.0,20.0],"ファットワーム":[18.0,21.0]},"tug":3,"hook":"S","pts":48,"dh":"3","th":"5","stars":3,"wx_not":[],"times":[],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":"クリル"},{"spot":13,"sc":0,"id":51687,"en":"Junior Jinbei","ja":"ジンベェ","ord":7,"pref":["どの餌でも"],"bites":{"イワイソメ":[10.0,11.0],"クリル":[10.0,11.0],"ファットワーム":[11.0,11.0]},"tug":1,"hook":"P","pts":300,"dh":"1","th":"1","stars":4,"wx_not":[],"times":[],"role":"","intu":null,"minion":true,"noic":true,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":0,"id":51237,"en":"Spectral Grouper","ja":"スペクトラルグルーパー","ord":8,"pref":["クリル"],"bites":{"イワイソメ":[11.0,12.0],"クリル":[10.0,11.0],"ファットワーム":[11.0,11.0]},"tug":3,"hook":"S","pts":100,"dh":null,"th":null,"stars":4,"wx_not":["快晴"],"times":[],"role":"trigger","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":0,"id":51238,"en":"Silkfin","ja":"豊漁の絹","ord":9,"pref":["クリル"],"bites":{"クリル":[13.0,16.0]},"tug":3,"hook":"S","pts":210,"dh":null,"th":"1","stars":4,"wx_not":[],"times":[],"role":"intuition","intu":{"req":[["ベニシャコ",3]],"sec":60},"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":1,"id":51239,"en":"Great Red Mantis","ja":"オオベニシャコ","ord":10,"pref":["イワイソメ"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"ラットの尾":[6.0,6.0]},"tug":1,"hook":"P","pts":75,"dh":"3","th":"5","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":1,"id":51240,"en":"Guzel Gwl","ja":"ギュゼルギュル","ord":11,"pref":["クリル"],"bites":{"イワイソメ":[3.0,4.0],"クリル":[3.0,4.0],"ファットワーム":[3.0,4.0],"ラットの尾":[4.0,4.0]},"tug":2,"hook":"S","pts":70,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":1,"id":51241,"en":"Darpana","ja":"ダルパナーフィッシュ","ord":12,"pref":["クリル"],"bites":{"イワイソメ":[5.0,5.0],"クリル":[5.0,5.0],"ファットワーム":[5.0,5.0]},"tug":1,"hook":"P","pts":92,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":1,"id":51242,"en":"Silverdart","ja":"シルバーダーツ","ord":13,"pref":["クリル"],"bites":{"クリル":[6.0,6.0]},"tug":2,"hook":"S","pts":164,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["夕"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":1,"id":51243,"en":"Satrapsaurus","ja":"ラザハンサウルス","ord":14,"pref":["ファットワーム"],"bites":{"イワイソメ":[2.0,3.0],"クリル":[2.0,3.0],"ファットワーム":[2.0,3.0],"ラットの尾":[5.0,5.5]},"tug":3,"hook":"S","pts":70,"dh":"3","th":"5","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":1,"id":51244,"en":"Tiger Mantis","ja":"タイガーマンティス","ord":15,"pref":["イワイソメ"],"bites":{"イワイソメ":[5.0,7.0]},"tug":1,"hook":"P","pts":150,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":1,"id":51245,"en":"Mehi-mahi","ja":"ヒマヒマヒ","ord":16,"pref":["ファットワーム"],"bites":{"イワイソメ":[5.0,5.0],"クリル":[5.0,5.0],"ファットワーム":[5.0,5.0],"ラットの尾":[5.0,5.0]},"tug":3,"hook":"S","pts":70,"dh":"2","th":"3","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":"イワイソメ"},{"spot":13,"sc":1,"id":51687,"en":"Junior Jinbei","ja":"ジンベェ","ord":17,"pref":["どの餌でも"],"bites":{"イワイソメ":[10.0,11.0],"クリル":[10.0,11.0],"ファットワーム":[10.0,11.0]},"tug":1,"hook":"P","pts":300,"dh":"1","th":"1","stars":4,"wx_not":[],"times":["昼","夕","夜"],"role":"","intu":null,"minion":true,"noic":true,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":1,"id":51246,"en":"Pliosaurus","ja":"プリオサウルス","ord":18,"pref":["ファットワーム"],"bites":{"ファットワーム":[6.0,7.5]},"tug":3,"hook":"S","pts":204,"dh":"4","th":"7","stars":4,"wx_not":[],"times":["昼"],"role":"","intu":null,"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null},{"spot":13,"sc":1,"id":51247,"en":"Manasvin","ja":"マナスヴィン","ord":19,"pref":["ラットの尾"],"bites":{"ラットの尾":[9.0,10.0]},"tug":3,"hook":"P","pts":500,"dh":null,"th":null,"stars":5,"wx_not":[],"times":["夜"],"role":"legend","intu":{"req":[["ラザハンサウルス",3]],"sec":15},"minion":false,"noic":false,"selfmooch":false,"tc":null,"alt":null}],"icons":[2587,2591,2603,2613,2619,12704,27590,28937,28938,28939,28940,28941,28942,29714,29715,29716,29718,29719,29720,29721,29722,29723,29724,29725,29726,29727,29728,29729,29730,29731,29732,29733,29734,29735,29736,29737,29738,29739,29740,29741,29742,29743,29744,29745,29746,29747,29748,29749,29750,29751,29752,29753,29754,29755,29756,29757,29758,29759,29760,29761,29762,29763,29764,29765,29766,29767,29768,29769,29770,29771,29772,29773,29774,29775,29776,29777,29778,29779,29780,29781,29782,29783,29784,29785,29786,29787,29788,29789,29790,29791,32055,32056,32057,32058,32059,32060,32061,32062,32063,32064,32065,32066,32067,32068,32069,32070,32071,32072,32073,32074,32075,32076,32077,32078,32079,32080,32081,32082,32083,32084,32085,32086,32087,32088,32089,32090,32091,32092,32093,32094,32095,32096,32097,32098,32099,32100,32101,32102,32103,32104,32105,32106,32107,32108,32109,32110,32111,32112,32113,32114,36593,40521,40522,40523,40524,40525,40526,40527,40528,40529,40530,40531,40532,40533,40534,40535,40536,40537,40538,40539,40540,40541,40542,40543,40544,40545,40546,40547,40548,40549,40550,40551,40552,40553,40554,40555,40556,40557,40558,40559,40560,40561,40562,40563,40564,40565,40566,40567,40568,40569,40570,40571,40572,40573,40574,40575,40576,40577,40578,40579,40580,40581,40582,40583,40584,40585,40586,40587,40588,40589,40590,40591,40592,40593,40594,40595,40596,40597,40598,40599,40600,51209,51210,51211,51212,51213,51214,51215,51216,51217,51218,51219,51220,51221,51222,51223,51224,51225,51226,51227,51229,51230,51231,51232,51233,51234,51235,51237,51238,51239,51240,51241,51242,51243,51244,51245,51246,51687]}</script>
+<script>
+(function () {
+  "use strict";
+  var D = JSON.parse(document.getElementById("data").textContent);
+  var SHORT = {1:"ガラディオン湾",2:"メルトール南",3:"メルトール北",4:"ロータノ海",5:"シェルダレー",6:"緋汐海",7:"ロズリト湾",8:"セイレーン海",9:"クガネ",10:"紅玉海",11:"無二江",12:"名もなき島",13:"サベネア島"};
+  var SPOT = {}; D.spots.forEach(function (s) { SPOT[s.id] = s; });
+  var STD = ["イワイソメ", "クリル", "ファットワーム"];
+  var WX = ["快晴","晴れ","曇り","霧","風","暴風","雨","暴雨","雷","雷雨","砂塵","灼熱波","雪","吹雪"];
+  var HOOK = {P: "プレシジョン", S: "ストロング"};
+  var ICONS = {}; (D.icons || []).forEach(function (id) { ICONS[id] = 1; });
+  var BAIT_ID = {"イワイソメ":29714,"クリル":29715,"ファットワーム":29716,"グロウワーム":2603,"シュリンプフィーダー":2613,"ヘヴィメタルジグ":2619,"ラットの尾":2591,"イカの切り身":27590,"ピルバグ":2587,"サバの切り身":36593,"ストーンラーヴァ":12704};
+  var FISH_ID = {}; D.fish.forEach(function (f) { FISH_ID[f.ja] = f.id; });
+  function ico(id, cls) { return ICONS[id] ? '<img class="' + (cls || 'ic') + '" src="icons/' + id + '.png" alt="" loading="lazy" decoding="async">' : ''; }
+  function baitIco(label) {
+    if (BAIT_ID[label]) return ico(BAIT_ID[label]);
+    if (label.indexOf("泳がせ:") === 0) return ico(FISH_ID[label.slice(4)]);
+    return '';
+  }
+  var state = {spot: "1", mode: "both", time: "", wx: "", bait: "pref", sort: "time", hide: false, q: ""};
+  try { var saved = JSON.parse(localStorage.getItem("of-state") || "null"); if (saved) { for (var k in state) if (k in saved && k !== "q") state[k] = saved[k]; } } catch (e) {}
+  function save() { try { localStorage.setItem("of-state", JSON.stringify(state)); } catch (e) {} }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+  function num(x) { return String(Math.round(x * 10) / 10); }
+  function fr(r) { if (!r) return "—"; return r[0] === r[1] ? num(r[0]) : num(r[0]) + "–" + num(r[1]); }
+  function baitOrder(k) { var i = STD.indexOf(k); return i < 0 ? 10 : i; }
+
+  // which voyages put a spot at each time of day
+  function voyagesFor(spot) {
+    var out = {"昼": [], "夕": [], "夜": []};
+    D.routes.forEach(function (r) { r.stops.forEach(function (s, i) { if (s.spot === spot) out[s.time].push({label: r.label, idx: i + 1}); }); });
+    return out;
+  }
+  function legendOf(spot) { return D.fish.filter(function (f) { return f.spot === spot && f.sc === 1 && f.role === "legend"; })[0]; }
+
+  function shown(f) {
+    var b = state.bait;
+    if (b === "pref") {
+      var p = f.pref[0];
+      if (p === "どの餌でも") {
+        var v = Object.keys(f.bites).map(function (k) { return f.bites[k]; });
+        return {bait: "どの餌でも", r: [Math.min.apply(null, v.map(function (x) { return x[0]; })), Math.max.apply(null, v.map(function (x) { return x[1]; }))]};
+      }
+      return {bait: p, r: f.bites[p] || null};
+    }
+    if (b === "special") {
+      var ks = Object.keys(f.bites).filter(function (k) { return STD.indexOf(k) < 0; });
+      return ks.length ? {bait: ks[0], r: f.bites[ks[0]]} : {bait: "特殊餌・泳がせ", r: null};
+    }
+    return {bait: b, r: f.bites[b] || null};
+  }
+
+  function chipsFor(f) {
+    var c = [];
+    if (f.role === "legend") c.push('<span class="chip role-legend">ヌシ</span>');
+    if (f.role === "intuition") c.push('<span class="chip role-intuition">直感魚</span>');
+    if (f.role === "trigger") c.push('<span class="chip role-trigger">幻海流トリガー</span>');
+    if (f.minion) c.push('<span class="chip role-legend">ミニオン</span>');
+    if (f.sc) {
+      if (f.times.length < 3) c.push('<span class="tm tm-' + f.times[0] + '">' + f.times.join("・") + 'のみ</span>');
+    } else if (f.wx_not.length) {
+      c.push('<span class="chip wx">' + esc(f.wx_not.join("・")) + 'では釣れない</span>');
+    }
+    c.push('<span class="chip pts">' + f.pts + 'pt</span>');
+    c.push('<span class="chip">推奨 ' + f.pref.map(function (p) { return baitIco(p) + esc(p); }).join("／") + '</span>');
+    c.push('<span class="chip">' + HOOK[f.hook] + '</span>');
+    if (f.dh || f.th) c.push('<span class="chip">DH ' + esc(f.dh || "-") + ' / TH ' + esc(f.th || "-") + '</span>');
+    if (f.noic) c.push('<span class="chip">セイム・キャスト不可</span>');
+    if (f.selfmooch) c.push('<span class="chip">自身を泳がせ可</span>');
+    if (f.alt) c.push('<span class="chip alt">別資料では' + esc(f.alt) + '推奨</span>');
+    return c.join("");
+  }
+
+  function rowHTML(f) {
+    var s = shown(f);
+    var dim = !s.r && state.bait !== "pref";
+    var keys = STD.slice();
+    Object.keys(f.bites).forEach(function (k) { if (keys.indexOf(k) < 0) keys.push(k); });
+    var bl = keys.map(function (k) { return baitIco(k) + '<b>' + esc(k) + '</b> ' + fr(f.bites[k]); });
+    var tc = f.tc ? ' ・ TC実測 ' + esc(f.tc.replace("-", "–")) : '';
+    var note = "";
+    if (f.intu) {
+      note = '<div class="note">漁師の直感：' + f.intu.req.map(function (r) { return esc(r[0]) + "×" + r[1]; }).join("、") + '（' + f.intu.sec + '秒）の状態で釣れる</div>';
+    }
+    return '<div class="fish' + (dim ? ' dim' : '') + '">' +
+      '<div class="tug t' + f.tug + '" aria-label="引き ' + "!".repeat(f.tug) + '">' + "!".repeat(f.tug) + '</div>' +
+      '<div class="nm">' + ico(f.id, 'fi') + '<span class="tx">' + esc(f.ja) + '<span class="en">' + esc(f.en) + '</span></span></div>' +
+      '<div class="sec"><b>' + fr(s.r) + '</b>' + (s.r ? '秒' : '') + '<span>' + baitIco(s.bait) + esc(s.bait) + '</span></div>' +
+      '<div class="meta">' + chipsFor(f) + '</div>' +
+      '<div class="baits">' + bl.join(" ／ ") + tc + '</div>' + note +
+      '</div>';
+  }
+
+  function keep(f) {
+    if (state.mode === "n" && f.sc) return false;
+    if (state.mode === "s" && !f.sc) return false;
+    if (state.time && f.sc && f.times.indexOf(state.time) < 0) return false;
+    if (state.wx && !f.sc && f.wx_not.indexOf(state.wx) >= 0) return false;
+    if (state.hide && state.bait !== "pref" && !shown(f).r) return false;
+    return true;
+  }
+  function sorter(a, b) {
+    if (state.sort === "pts") return b.pts - a.pts || a.ord - b.ord;
+    if (state.sort === "ord") return a.ord - b.ord;
+    var ra = shown(a).r, rb = shown(b).r;
+    var a0 = ra ? ra[0] : 999, b0 = rb ? rb[0] : 999, a1 = ra ? ra[1] : 999, b1 = rb ? rb[1] : 999;
+    return a0 - b0 || a1 - b1 || a.ord - b.ord;
+  }
+
+  function summaryHTML(spot) {
+    var s = SPOT[spot], v = voyagesFor(spot), lg = legendOf(spot);
+    var lines = ["昼", "夕", "夜"].map(function (t) {
+      var items = v[t].map(function (x) { return esc(x.label) + " " + x.idx + "番目"; }).join("、");
+      var star = lg && lg.times.indexOf(t) >= 0 ? ' ★' + esc(lg.ja) : '';
+      return '<div><span class="tm tm-' + t + '">' + t + '</span><span>' + items + '<b style="color:var(--tug3)">' + star + '</b></span></div>';
+    }).join("");
+    var nn = D.fish.filter(function (f) { return f.spot === spot && !f.sc; }).length;
+    var ns = D.fish.filter(function (f) { return f.spot === spot && f.sc; }).length;
+    return '<div class="summary"><h2>' + esc(s.ja) + (s.new ? ' <span class="badge-new">7.5追加</span>' : '') + ' <span class="en">' + esc(s.en) + '・' + esc(s.group) + '・通常' + nn + '種／幻海流' + ns + '種</span></h2>' +
+      '<div class="times">' + lines + '</div>' +
+      (s.new ? '<div class="notice">7.5追加海域のため、2026年5月1日時点の収集データです（元サイトでも調整中）。秒数・推奨餌は今後変わる可能性があります。</div>' : '') +
+      '</div>';
+  }
+
+  function sectionHTML(title, cls, list, sub) {
+    return '<div class="section-h' + cls + '"><span>' + title + '</span><small>' + sub + '</small></div>' +
+      '<div class="list">' + (list.length ? list.map(rowHTML).join("") : '<div class="empty">条件に合う魚はいません。</div>') + '</div>';
+  }
+
+  function renderFish() {
+    var out = document.getElementById("fish-out");
+    var q = state.q.trim().toLowerCase();
+    var html = "";
+    var total = 0;
+    var spots = q ? D.spots.map(function (s) { return s.id; }) : [Number(state.spot)];
+    spots.forEach(function (sp) {
+      var base = D.fish.filter(function (f) {
+        if (f.spot !== sp) return false;
+        if (q && f.ja.toLowerCase().indexOf(q) < 0 && f.en.toLowerCase().indexOf(q) < 0) return false;
+        return keep(f);
+      });
+      if (q && !base.length) return;
+      var n = base.filter(function (f) { return !f.sc; }).sort(sorter);
+      var s = base.filter(function (f) { return f.sc; }).sort(sorter);
+      total += n.length + s.length;
+      if (!q) html += summaryHTML(sp);
+      var label = q ? esc(SPOT[sp].ja) + "：" : "";
+      if (state.mode !== "s" && (!q || n.length)) html += sectionHTML(label + "通常時", "", n, state.wx ? "天候：" + esc(state.wx) : "天候で絞り込みなし");
+      if (state.mode !== "n" && (!q || s.length)) html += sectionHTML(label + "幻海流", " sc", s, state.time ? "時間帯：" + esc(state.time) : "時間帯で絞り込みなし");
+    });
+    if (q && !total) html = '<div class="summary">「' + esc(state.q) + '」に一致する魚は見つかりませんでした。日本語名か英語名の一部で検索できます。</div>';
+    html += '<p class="count">表示中 ' + total + ' 件（全' + D.fish.length + '件）</p>';
+    out.innerHTML = html;
+  }
+
+  function renderLegend() {
+    var html = D.spots.map(function (s) {
+      var sp = s.id;
+      var trig = D.fish.filter(function (f) { return f.spot === sp && !f.sc && f.role === "trigger"; })[0];
+      var intu = D.fish.filter(function (f) { return f.spot === sp && !f.sc && f.role === "intuition"; })[0];
+      var lg = legendOf(sp);
+      var v = voyagesFor(sp);
+      function line(f) {
+        var p = f.pref[0], r = f.bites[p];
+        return ico(f.id, 'ic s') + '<span class="tug-inline t' + f.tug + '" style="font-weight:700">' + "!".repeat(f.tug) + '</span> ' + esc(f.ja) + '<span class="sub">' + baitIco(p) + esc(p) + '・' + fr(r) + '秒・' + f.pts + 'pt</span>';
+      }
+      var lgVoy = [];
+      lg.times.forEach(function (t) { v[t].forEach(function (x) { lgVoy.push(esc(x.label) + "（" + x.idx + "番目）"); }); });
+      return '<article class="card"><h3>' + esc(s.ja) + (s.new ? ' <span class="badge-new">7.5追加</span>' : '') + '</h3><dl class="kv">' +
+        '<dt>幻海流トリガー</dt><dd>' + line(trig) + '<span class="sub">' + (trig.wx_not.length ? esc(trig.wx_not.join("・")) + 'では釣れない' : '') + '</span></dd>' +
+        '<dt>直感魚（通常）</dt><dd>' + line(intu) + '<span class="sub">条件：' + intu.intu.req.map(function (r) { return esc(r[0]) + "×" + r[1]; }).join("、") + '（' + intu.intu.sec + '秒）</span></dd>' +
+        '<dt>ヌシ（幻海流）</dt><dd>' + line(lg) + '<span class="sub">' + lg.times.map(function (t) { return '<span class="tm tm-' + t + '">' + t + '</span>'; }).join(" ") + ' 条件：' + lg.intu.req.map(function (r) { return esc(r[0]) + "×" + r[1]; }).join("、") + '（' + lg.intu.sec + '秒）</span></dd>' +
+        '<dt>ヌシが狙える航路</dt><dd>' + lgVoy.join("<br>") + (function () { var nw = nextWindow(sp, Date.now()); if (!nw) return ''; var w = when(nw.vn); return '<span class="nextwin">次のチャンス：' + esc(w.day) + ' ' + esc(w.hm) + ' 受付の' + esc(nw.r.label) + '</span>'; })() + '</dd>' +
+        '</dl></article>';
+    }).join("");
+    document.getElementById("legend-out").innerHTML = html;
+  }
+
+  function renderRoutes() {
+    var groups = [
+      {name: "近海航路", ids: [1,2,3,4,5,6,7,8,9,10,11,12]},
+      {name: "遠洋航路（クガネ方面）", ids: [13,14,15,16,17,18]},
+      {name: "遠洋航路（サベネア島行き・7.5追加）", ids: [19,20,21]}
+    ];
+    var byId = {}; D.routes.forEach(function (r) { byId[r.id] = r; });
+    var html = groups.map(function (g) {
+      return '<div class="route-group"><h2>' + g.name + '</h2>' + g.ids.map(function (id) {
+        var r = byId[id];
+        var nr = nextRun(r.id, Date.now()), nw = nr != null ? when(nr) : null;
+        return '<div class="route"><h3>' + esc(r.label) + '</h3>' + (nw ? '<span class="nextwin">次の出航：' + esc(nw.day) + ' ' + esc(nw.hm) + ' 受付</span>' : '') + '<div class="stops">' + r.stops.map(function (st, i) {
+          var lg = legendOf(st.spot);
+          var hit = lg && lg.times.indexOf(st.time) >= 0;
+          return '<div class="stop"><span class="no">' + (i + 1) + '番目</span><span>' + esc(SHORT[st.spot]) + ' <span class="tm tm-' + st.time + '">' + st.time + '</span></span>' + (hit ? '<span class="lg">★幻海流のヌシ：' + esc(lg.ja) + '</span>' : '') + '</div>';
+        }).join("") + '</div></div>';
+      }).join("") + '</div>';
+    }).join("");
+    document.getElementById("routes-out").innerHTML = html;
+  }
+
+  // ===== schedule =====
+  var TWO_H = 7200000, MIN = 60000;
+  var IND_BASE = ["BD","TD","ND","RD","BS","TS","NS","RS","BN","TN","NN","RN"];
+  var RUBY_U = ["SqT","PA","GJ","PA","SqG","MT","SS","MT","SH","MM","ST","MM"];
+  var CODE2ROUTE = {ND:2, NS:3, NN:1, RD:5, RS:6, RN:4, BD:8, BS:9, BN:7, TD:11, TS:12, TN:10,
+    SS:15, SH:18, ST:13, SqT:16, SqG:17, GJ:14, MT:21, MM:19, PA:20};
+  var ROUTE = {}; D.routes.forEach(function (r) { ROUTE[r.id] = r; });
+  var LEG = {}; D.fish.forEach(function (f) { if (f.role === "legend") LEG[f.spot] = f; });
+  function rot(i, base) { return base[(i % 12 + Math.floor(i / 12)) % 12]; }
+  function routeAt(fam, vn) { return ROUTE[CODE2ROUTE[fam === "indigo" ? rot((88 + vn) % 144, IND_BASE) : rot(vn % 144, RUBY_U)]]; }
+  function famOf(routeId) { return routeId <= 12 ? "indigo" : "ruby"; }
+  function legendsOn(r) {
+    return r.stops.map(function (s, i) { return {s: s, i: i, lg: LEG[s.spot]}; })
+      .filter(function (x) { return x.lg && x.lg.times.indexOf(x.s.time) >= 0; });
+  }
+  var TZ = "Asia/Tokyo";
+  var fDay = new Intl.DateTimeFormat("ja-JP", {timeZone: TZ, month: "numeric", day: "numeric", weekday: "short"});
+  var fHM = new Intl.DateTimeFormat("ja-JP", {timeZone: TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23"});
+  var fClock = new Intl.DateTimeFormat("ja-JP", {timeZone: TZ, hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23"});
+  function when(vn) { var d = new Date(vn * TWO_H); return {day: fDay.format(d), hm: fHM.format(d)}; }
+  function dur(ms) {
+    var m = Math.ceil(ms / MIN), h = Math.floor(m / 60); m = m % 60;
+    return h ? h + ":" + (m < 10 ? "0" : "") + m : m + "分";
+  }
+  function status(vn, now) {
+    var d = now - vn * TWO_H;
+    if (d < 0) return {k: "wait", t: "あと" + dur(-d)};
+    if (d < 15 * MIN) return {k: "open", t: "受付中・締切まで" + dur(15 * MIN - d)};
+    if (d < 60 * MIN) return {k: "sail", t: "航海中"};
+    return {k: "done", t: "終了"};
+  }
+  function firstVn(now) { var vn = Math.floor(now / TWO_H); if (now - vn * TWO_H >= 60 * MIN) vn += 1; return vn; }
+  function nextWindow(spot, now) {
+    var fam = spot <= 7 ? "indigo" : "ruby", lg = LEG[spot], vn = firstVn(now);
+    for (var k = 0; k < 300; k++) {
+      var r = routeAt(fam, vn + k);
+      for (var i = 0; i < 3; i++) if (r.stops[i].spot === spot && lg.times.indexOf(r.stops[i].time) >= 0) return {vn: vn + k, r: r, i: i};
+    }
+    return null;
+  }
+  function nextRun(routeId, now) {
+    var fam = famOf(routeId), vn = firstVn(now);
+    for (var k = 0; k < 300; k++) if (routeAt(fam, vn + k).id === routeId) return vn + k;
+    return null;
+  }
+
+  var sch = {fam: "indigo", legend: "", count: 12, selVn: null, stop: 0, wx: {}};
+  try { var ss = JSON.parse(localStorage.getItem("of-sch") || "null"); if (ss) { if (ss.fam) sch.fam = ss.fam; if (ss.legend != null) sch.legend = ss.legend; } } catch (e) {}
+  function saveSch() { try { localStorage.setItem("of-sch", JSON.stringify({fam: sch.fam, legend: sch.legend})); } catch (e) {} }
+
+  function upcoming(now) {
+    var out = [], vn = firstVn(now);
+    for (var k = 0; out.length < sch.count && k < 2000; k++) {
+      var r = routeAt(sch.fam, vn + k);
+      if (sch.legend && !legendsOn(r).some(function (x) { return String(x.lg.spot) === sch.legend; })) continue;
+      out.push({vn: vn + k, r: r});
+    }
+    return out;
+  }
+  function stopsHTML(r) {
+    return r.stops.map(function (s) { return '<span>' + esc(SHORT[s.spot]) + '</span><span class="tm tm-' + s.time + '">' + s.time + '</span>'; }).join('<span aria-hidden="true">→</span>');
+  }
+  function renderVoyages() {
+    var now = Date.now();
+    var list = upcoming(now);
+    if (sch.selVn == null || status(sch.selVn, now).k === "done" || !list.some(function (v) { return v.vn === sch.selVn; })) {
+      sch.selVn = list.length ? list[0].vn : null; sch.stop = 0;
+    }
+    document.getElementById("voy-out").innerHTML = list.map(function (v) {
+      var w = when(v.vn), st = status(v.vn, now), lgs = legendsOn(v.r);
+      return '<li class="voy' + (v.vn === sch.selVn ? ' sel' : '') + '"><button type="button" data-vn="' + v.vn + '" aria-pressed="' + (v.vn === sch.selVn) + '">' +
+        '<span class="when"><small>' + esc(w.day) + '</small><b>' + esc(w.hm) + '</b><span class="st st-' + st.k + '" data-st="' + v.vn + '">' + esc(st.t) + '</span></span>' +
+        '<span class="lbl">' + esc(v.r.label) + '</span>' +
+        '<span class="path">' + stopsHTML(v.r) + '</span>' +
+        (lgs.length ? '<span class="stars">★ヌシ：' + lgs.map(function (x) { return ico(x.lg.id) + esc(x.lg.ja); }).join("、") + '</span>' : '') +
+        '</button></li>';
+    }).join("") || '<li class="empty">表示できる便がありません。</li>';
+    renderDetail();
+  }
+  function findIn(spot, sc, ja) { return D.fish.filter(function (f) { return f.spot === spot && f.sc === sc && f.ja === ja; })[0]; }
+  function brief(f) {
+    var p = f.pref[0], r = p === "どの餌でも" ? null : f.bites[p];
+    return ico(f.id, 'ic s') + esc(f.ja) + '（' + baitIco(p) + esc(p) + (r ? '・' + fr(r) + '秒' : '') + '・' + "!".repeat(f.tug) + '・' + f.pts + 'pt）';
+  }
+  function okWx(f, wx) { return f.sc || !wx || f.wx_not.indexOf(wx) < 0; }
+  function ngNote(f, wx) { return okWx(f, wx) ? '' : ' <span class="ng">今の天候では釣れない</span>'; }
+  function chain(f, sc) {
+    return f.intu.req.map(function (q) { var g = findIn(f.spot, sc, q[0]); return (g ? brief(g) : esc(q[0])) + '×' + q[1]; }).join(' ＋ ') + '（' + f.intu.sec + '秒の直感）';
+  }
+  function recHTML(spot, time, wx) {
+    var N = D.fish.filter(function (f) { return f.spot === spot && !f.sc; });
+    var S = D.fish.filter(function (f) { return f.spot === spot && f.sc; });
+    var trig = N.filter(function (f) { return f.role === "trigger"; })[0];
+    var intu = N.filter(function (f) { return f.role === "intuition"; })[0];
+    var lg = S.filter(function (f) { return f.role === "legend"; })[0];
+    var lgOk = lg.times.indexOf(time) >= 0;
+    var highN = N.filter(function (f) { return !f.role && !f.minion; }).sort(function (a, b) { return b.pts - a.pts; }).slice(0, 2);
+    var only = S.filter(function (f) { return f.role !== "legend" && f.times.length < 3 && f.times.indexOf(time) >= 0; }).sort(function (a, b) { return b.pts - a.pts; });
+    var anyHigh = S.filter(function (f) { return f.role !== "legend" && !f.minion && f.times.length === 3; }).sort(function (a, b) { return b.pts - a.pts; }).slice(0, 2);
+    var minion = N.filter(function (f) { return f.minion; })[0];
+    var h = '<div class="rec"><h3>この釣り場のねらい目（' + time + '）</h3>';
+    h += '<div class="phase">通常時</div><ol>';
+    h += '<li>幻海流を起こす：' + brief(trig) + ngNote(trig, wx) + '</li>';
+    h += '<li>直感魚：' + brief(intu) + ngNote(intu, wx) + '<br><small>条件：' + chain(intu, 0) + '</small></li>';
+    if (highN.length) h += '<li>高得点：' + highN.map(function (f) { return brief(f) + ngNote(f, wx); }).join('、') + '</li>';
+    if (minion) h += '<li>ミニオン：' + brief(minion) + '（幻海流中も釣れる）</li>';
+    h += '</ol><div class="phase sc">幻海流が来たら（' + time + '）</div><ol>';
+    if (lgOk) h += '<li class="lgline">ヌシ：' + brief(lg) + '<br><small>条件：' + chain(lg, 1) + '</small></li>';
+    else h += '<li>ヌシの' + esc(lg.ja) + 'は' + lg.times.join('・') + 'のみ（この便では出ません）</li>';
+    if (only.length) h += '<li>この時間帯だけ：' + only.map(brief).join('、') + '</li>';
+    if (anyHigh.length) h += '<li>時間帯を問わず高得点：' + anyHigh.map(brief).join('、') + '</li>';
+    h += '</ol></div>';
+    return h;
+  }
+  function wxChoices(spot) {
+    var set = {};
+    D.fish.forEach(function (f) { if (f.spot === spot && !f.sc) f.wx_not.forEach(function (w) { set[w] = 1; }); });
+    return WX.filter(function (w) { return set[w]; });
+  }
+  function renderDetail() {
+    var box = document.getElementById("voy-detail");
+    if (sch.selVn == null) { box.innerHTML = ''; return; }
+    var now = Date.now(), vn = sch.selVn, r = routeAt(sch.fam, vn), w = when(vn), st = status(vn, now);
+    var i = sch.stop, stop = r.stops[i], spot = stop.spot, time = stop.time;
+    var key = sch.fam + ':' + vn + ':' + i, wx = sch.wx[key] || '';
+    var specials = {};
+    legendsOn(r).forEach(function (x) { var p = x.lg.pref[0]; if (p.indexOf('泳がせ') !== 0) specials[p] = (specials[p] ? specials[p] + '、' : '') + x.lg.ja; });
+    var sp = Object.keys(specials).map(function (k) { return esc(k) + '（' + esc(specials[k]) + '用）'; }).join('、');
+    var h = '<div class="detail-h"><h2>' + esc(r.label) + '</h2>' +
+      '<div class="sub">' + esc(w.day) + ' ' + esc(w.hm) + ' 受付 <span class="st st-' + st.k + '" data-st="' + vn + '">' + esc(st.t) + '</span></div>' +
+      '<div class="sub">' + (sp ? '持っていく特殊餌：' + sp : 'ヌシ用の特殊餌は不要な便です') + '</div>' +
+      '<div class="stoptabs" role="group" aria-label="釣り場">' + r.stops.map(function (s, k) {
+        var lg = LEG[s.spot], hit = lg && lg.times.indexOf(s.time) >= 0;
+        return '<button type="button" data-stop="' + k + '" aria-pressed="' + (k === i) + '"><span class="no">' + (k + 1) + '番目</span><span>' + esc(SHORT[s.spot]) + ' <span class="tm tm-' + s.time + '">' + s.time + '</span></span>' + (hit ? '<span class="lgmark">★' + esc(lg.ja) + '</span>' : '') + '</button>';
+      }).join('') + '</div></div>';
+    var choices = wxChoices(spot);
+    h += '<div class="wxbar" role="group" aria-label="今の天候"><span class="hint">今の天候：</span>' +
+      ['', ].concat(choices).map(function (c) {
+        return '<button type="button" data-wx="' + c + '" aria-pressed="' + (wx === c) + '">' + (c === '' ? '未確認' : c === '快晴' ? '快晴（幻海流のあと）' : c) + '</button>';
+      }).join('') + '<span class="hint">ここにない天候なら「未確認」のままで全部釣れます。天候は事前に分かりません。</span></div>';
+    h += recHTML(spot, time, wx);
+    h += '<div class="frow"><div class="field" style="flex:0 1 200px"><label for="d-bait">秒数を表示する餌</label><select id="d-bait">' +
+      [["pref","推奨餌"],["イワイソメ","イワイソメ"],["クリル","クリル"],["ファットワーム","ファットワーム"],["special","特殊餌・泳がせ"]].map(function (o) {
+        return '<option value="' + o[0] + '"' + (state.bait === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div></div>';
+    var N = D.fish.filter(function (f) { return f.spot === spot && !f.sc && okWx(f, wx); }).sort(sorterTime);
+    var hidden = D.fish.filter(function (f) { return f.spot === spot && !f.sc && !okWx(f, wx); }).length;
+    var S = D.fish.filter(function (f) { return f.spot === spot && f.sc && f.times.indexOf(time) >= 0; }).sort(sorterTime);
+    h += sectionHTML(esc(SPOT[spot].ja) + "：通常時", "", N, wx ? esc(wx) + 'で釣れない' + hidden + '種を除外' : '天候未確認・全種表示');
+    h += sectionHTML(esc(SPOT[spot].ja) + "：幻海流（" + time + "）", " sc", S, time + 'に出ない魚は除外');
+    box.innerHTML = h;
+  }
+  function sorterTime(a, b) {
+    var ra = shown(a).r, rb = shown(b).r;
+    return (ra ? ra[0] : 999) - (rb ? rb[0] : 999) || (ra ? ra[1] : 999) - (rb ? rb[1] : 999) || b.pts - a.pts;
+  }
+  function tick() {
+    var now = Date.now();
+    document.getElementById("clock").textContent = fClock.format(new Date(now));
+    var needRender = false;
+    Array.prototype.forEach.call(document.querySelectorAll("[data-st]"), function (el) {
+      var st = status(Number(el.getAttribute("data-st")), now);
+      if (st.k === "done") needRender = true;
+      if (el.textContent !== st.t) { el.textContent = st.t; el.className = "st st-" + st.k; }
+    });
+    if (needRender) renderVoyages();
+  }
+  function syncFam() {
+    ["indigo", "ruby"].forEach(function (f) { document.getElementById("fam-" + f).setAttribute("aria-pressed", String(sch.fam === f)); });
+    var ids = sch.fam === "indigo" ? [1,2,3,4,5,6,7] : [8,9,10,11,12,13];
+    var lsel = document.getElementById("f-legend");
+    lsel.innerHTML = '<option value="">すべての便</option>' + ids.map(function (id) { return '<option value="' + id + '">' + esc(LEG[id].ja) + '（' + esc(SHORT[id]) + '・' + LEG[id].times.join('・') + '）</option>'; }).join('');
+    if (ids.indexOf(Number(sch.legend)) < 0) sch.legend = "";
+    lsel.value = sch.legend;
+  }
+  ["indigo", "ruby"].forEach(function (f) {
+    document.getElementById("fam-" + f).addEventListener("click", function () { sch.fam = f; sch.selVn = null; sch.count = 12; saveSch(); syncFam(); renderVoyages(); });
+  });
+  document.getElementById("f-legend").addEventListener("change", function (e) { sch.legend = e.target.value; sch.selVn = null; saveSch(); renderVoyages(); });
+  document.getElementById("voy-more").addEventListener("click", function () { sch.count += 12; renderVoyages(); });
+  document.getElementById("voy-out").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-vn]"); if (!b) return;
+    sch.selVn = Number(b.getAttribute("data-vn")); sch.stop = 0; renderVoyages();
+    var det = document.getElementById("voy-detail");
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    det.scrollIntoView({behavior: reduce ? "auto" : "smooth", block: "start"});
+  });
+  document.getElementById("voy-detail").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-stop]");
+    if (b) { sch.stop = Number(b.getAttribute("data-stop")); renderDetail(); return; }
+    var x = e.target.closest("button[data-wx]");
+    if (x) { sch.wx[sch.fam + ':' + sch.selVn + ':' + sch.stop] = x.getAttribute("data-wx"); renderDetail(); }
+  });
+  document.getElementById("voy-detail").addEventListener("change", function (e) {
+    if (e.target.id === "d-bait") { state.bait = e.target.value; save(); syncControls(); renderDetail(); renderFish(); }
+  });
+
+  // controls
+  var spSel = document.getElementById("f-spot");
+  spSel.innerHTML = '<optgroup label="近海航路">' + D.spots.filter(function (s) { return s.group === "近海航路"; }).map(function (s) { return '<option value="' + s.id + '">' + esc(s.ja) + '</option>'; }).join("") + '</optgroup>' +
+    '<optgroup label="遠洋航路">' + D.spots.filter(function (s) { return s.group === "遠洋航路"; }).map(function (s) { return '<option value="' + s.id + '">' + esc(s.ja) + (s.new ? '（7.5追加）' : '') + '</option>'; }).join("") + '</optgroup>';
+  document.getElementById("f-wx").innerHTML = '<option value="">指定なし</option>' + WX.map(function (w) { return '<option value="' + w + '">' + w + '</option>'; }).join("");
+  function syncControls() {
+    spSel.value = state.spot;
+    document.getElementById("f-time").value = state.time;
+    document.getElementById("f-wx").value = state.wx;
+    document.getElementById("f-bait").value = state.bait;
+    document.getElementById("f-sort").value = state.sort;
+    document.getElementById("f-hide").checked = state.hide;
+    document.getElementById("f-q").value = state.q;
+    ["both", "n", "s"].forEach(function (m) { document.getElementById("m-" + m).setAttribute("aria-pressed", String(state.mode === m)); });
+  }
+  function bind(id, key, ev, get) {
+    document.getElementById(id).addEventListener(ev, function (e) { state[key] = get(e.target); save(); renderFish(); });
+  }
+  bind("f-spot", "spot", "change", function (t) { return t.value; });
+  bind("f-time", "time", "change", function (t) { return t.value; });
+  bind("f-wx", "wx", "change", function (t) { return t.value; });
+  bind("f-bait", "bait", "change", function (t) { return t.value; });
+  bind("f-sort", "sort", "change", function (t) { return t.value; });
+  bind("f-hide", "hide", "change", function (t) { return t.checked; });
+  bind("f-q", "q", "input", function (t) { return t.value; });
+  ["both", "n", "s"].forEach(function (m) {
+    document.getElementById("m-" + m).addEventListener("click", function () { state.mode = m; save(); syncControls(); renderFish(); });
+  });
+
+  // tabs via plain #name
+  var TABS = ["schedule", "fish", "legend", "routes", "about"];
+  function showTab() {
+    var h = (location.hash || "").replace("#", "");
+    if (TABS.indexOf(h) < 0) h = "schedule";
+    TABS.forEach(function (t) {
+      document.getElementById("p-" + t).classList.toggle("on", t === h);
+      var a = document.querySelector('nav.tabs a[data-tab="' + t + '"]');
+      if (t === h) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+    });
+  }
+  window.addEventListener("hashchange", showTab);
+
+  syncControls();
+  syncFam();
+  renderVoyages();
+  renderFish();
+  renderLegend();
+  renderRoutes();
+  showTab();
+  tick();
+  setInterval(tick, 1000);
+  setInterval(function () { renderLegend(); renderRoutes(); }, 10 * MIN);
+})();
+</script>
+</body>
+</html>
